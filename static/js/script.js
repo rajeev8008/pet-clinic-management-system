@@ -2,8 +2,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const API_BASE_URL = 'http://127.0.0.1:5001/api';
 
     // --- Page specific logic ---
-    const page = document.body.id || window.location.pathname.split('/').pop().split('.')[0];
-
     if (document.querySelector('#schedule-view')) {
         initializeSchedulePage();
     }
@@ -16,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- INITIALIZERS ---
     function initializeSchedulePage() {
+        // This function is correct and does not need changes.
         const scheduleTableBody = document.querySelector('#schedule-table tbody');
         const bookAppointmentForm = document.getElementById('book-appointment-form');
         const apptOwnerSelect = document.getElementById('appt-owner-select');
@@ -29,6 +28,10 @@ document.addEventListener('DOMContentLoaded', function() {
             scheduleTableBody.innerHTML = '';
             appointments.forEach(appt => {
                 const row = document.createElement('tr');
+                let actions = '';
+                if (appt.Status === 'Scheduled') {
+                    actions = `<button class="action-button complete" data-appt-id="${appt.AppID}">Complete Visit</button>`;
+                }
                 row.innerHTML = `
                     <td>${new Date(appt.Date).toLocaleDateString()} ${appt.Time}</td>
                     <td>${appt.PetName}</td>
@@ -36,9 +39,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${appt.VetName}</td>
                     <td>${appt.Reason}</td>
                     <td>${appt.Status}</td>
-                    <td>
-                        ${appt.Status === 'Scheduled' ? `<button class="action-button complete" data-appt-id="${appt.AppID}">Complete Visit</button>` : ''}
-                    </td>
+                    <td>${actions}</td>
                 `;
                 scheduleTableBody.appendChild(row);
             });
@@ -99,7 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     completeVisitForm.reset();
                     completeVisitModal.close();
                     fetchAndRenderAppointments();
-                } else { alert('Failed to complete visit.'); }
+                } else { 
+                    const error = await response.json();
+                    alert(`Failed to complete visit: ${error.message}`);
+                }
             });
         }
 
@@ -108,6 +112,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializeOwnerPage() {
+        // This function is correct and does not need changes.
         const addOwnerForm = document.getElementById('add-owner-form');
         const ownerTableBody = document.querySelector('#owner-table tbody');
         const addPetModal = document.getElementById('add-pet-modal');
@@ -119,7 +124,6 @@ document.addEventListener('DOMContentLoaded', function() {
             ownerTableBody.innerHTML = '';
             owners.forEach(owner => {
                 const row = document.createElement('tr');
-                // BUG FIX: Ensure data-owner-name is correctly formatted with both names
                 row.innerHTML = `
                     <td>${owner.FirstName} ${owner.LastName}</td>
                     <td>${owner.Phone}</td>
@@ -134,7 +138,9 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             const formData = {
                 firstName: document.getElementById('firstName').value, lastName: document.getElementById('lastName').value,
-                phone: document.getElementById('phone').value, address: document.getElementById('address').value,
+                phone: document.getElementById('phone').value, 
+                email: document.getElementById('email').value,
+                address: document.getElementById('address').value,
             };
             const response = await fetch(`${API_BASE_URL}/owners`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
             if (response.ok) {
@@ -150,7 +156,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const formData = {
                     name: document.getElementById('pet-name').value, species: document.getElementById('pet-species').value,
                     breed: document.getElementById('pet-breed').value, age: document.getElementById('pet-age').value,
-                    // BUG FIX: Correctly get the ownerId from the hidden input
                     ownerId: document.getElementById('pet-owner-id').value,
                 };
                 const response = await fetch(`${API_BASE_URL}/pets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
@@ -169,56 +174,83 @@ document.addEventListener('DOMContentLoaded', function() {
         const billingTableBody = document.querySelector('#billing-table tbody');
         
         async function fetchAndRenderBills() {
-            const response = await fetch(`${API_BASE_URL}/billing`);
-            const bills = await response.json();
-            billingTableBody.innerHTML = '';
-            bills.forEach(bill => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${new Date(bill.Date).toLocaleDateString()}</td>
-                    <td>${bill.FirstName} ${bill.LastName}</td>
-                    <td>${bill.PetName}</td>
-                    <td>$${bill.Amount.toFixed(2)}</td>
-                    <td><button class="action-button" data-bill-id="${bill.BillID}">Mark as Paid</button></td>
-                `;
-                billingTableBody.appendChild(row);
-            });
+            try {
+                const response = await fetch(`${API_BASE_URL}/billing`);
+                const bills = await response.json();
+                
+                billingTableBody.innerHTML = '';
+                if (bills.length === 0) {
+                    billingTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No bills found.</td></tr>';
+                    return;
+                }
+
+                bills.forEach(bill => {
+                    const row = document.createElement('tr');
+                    let actionButton = '';
+                    if (bill.Status === 'Unpaid') {
+                        actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}">Process Payment</button>`;
+                    }
+                    
+                    // --- THIS IS THE FIX ---
+                    // Convert bill.Amount to a number before calling toFixed()
+                    const amount = Number(bill.Amount);
+                    const formattedAmount = isNaN(amount) ? '0.00' : amount.toFixed(2);
+
+                    row.innerHTML = `
+                        <td>${bill.BillID}</td>
+                        <td>${new Date(bill.Date).toLocaleDateString()}</td>
+                        <td>${bill.FirstName} ${bill.LastName}</td>
+                        <td>${bill.PetName}</td>
+                        <td>$${formattedAmount}</td>
+                        <td>${bill.Status}</td>
+                        <td>${bill.Mode || 'N/A'}</td>
+                        <td>${actionButton}</td>
+                    `;
+                    billingTableBody.appendChild(row);
+                });
+            } catch (error) {
+                console.error("An error occurred while fetching bills:", error);
+            }
         }
         
         fetchAndRenderBills();
 
         billingTableBody.addEventListener('click', async (e) => {
             if (e.target.matches('.action-button[data-bill-id]')) {
+                const appId = e.target.dataset.appId;
                 const billId = e.target.dataset.billId;
-                const response = await fetch(`${API_BASE_URL}/billing/${billId}/pay`, { method: 'PUT' });
-                if (response.ok) {
-                    alert('Payment processed!');
-                    fetchAndRenderBills(); // Refresh the list
-                } else {
-                    alert('Failed to process payment.');
+                const mode = prompt("Enter payment mode (e.g., Cash, Card):");
+                if (mode) {
+                    const response = await fetch(`${API_BASE_URL}/billing/${appId}/${billId}/pay`, { 
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode: mode })
+                    });
+                    if (response.ok) {
+                        alert('Payment processed!');
+                        fetchAndRenderBills(); // Refresh the list
+                    } else {
+                        alert('Failed to process payment.');
+                    }
                 }
             }
         });
     }
 
-    // --- Global Event Listeners for Modals ---
+    // --- Global Event Listeners ---
     document.body.addEventListener('click', (e) => {
-        // Owner Page: Add Pet button
-        if (e.target.matches('#owner-table .action-button[data-owner-id]')) {
+        if (e.target.matches('.action-button[data-owner-id]')) {
             const addPetModal = document.getElementById('add-pet-modal');
-            // BUG FIX: Correctly set the owner ID and name in the modal before showing it
             document.getElementById('pet-owner-id').value = e.target.dataset.ownerId;
             document.getElementById('pet-owner-name').textContent = e.target.dataset.ownerName;
             addPetModal.showModal();
         }
-        // Schedule Page: Complete Visit button
-        if (e.target.matches('#schedule-table .action-button.complete')) {
+        if (e.target.matches('.action-button.complete')) {
             const completeVisitModal = document.getElementById('complete-visit-modal');
             document.getElementById('complete-appt-id').value = e.target.dataset.apptId;
             document.getElementById('visit-appt-id').textContent = e.target.dataset.apptId;
             completeVisitModal.showModal();
         }
-        // General: Close modal buttons
         if (e.target.matches('.close-modal-btn')) {
             e.target.closest('dialog').close();
         }
