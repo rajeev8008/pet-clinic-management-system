@@ -1,0 +1,25 @@
+:root {
+    --primary-color: #4A90E2;
+    --dark-color: #333;
+    --light-color: #f4f4f9;
+    --border-color: #ddd;
+    --bg-color: #fff;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: var(--light-color); color: var(--dark-color); }
+header { background-color: var(--primary-color); color: white; padding: 1rem; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+main.container { max-width: 1200px; margin: 2rem auto; background: var(--bg-color); padding: 2rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+section { margin-bottom: 2.5rem; }
+h2 { color: var(--primary-color); border-bottom: 2px solid var(--primary-color); padding-bottom: 0.5rem; margin-top: 0; }
+h3 { margin-top: 0; }
+form { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem; max-width: 500px; }
+input, select, textarea { padding: 0.75rem; border: 1px solid var(--border-color); border-radius: 4px; font-size: 1rem; }
+button { padding: 0.75rem 1.5rem; background-color: var(--primary-color); color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1rem; transition: background-color 0.2s; }
+button:hover { background-color: #357ABD; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+th { background-color: #f8f8f8; }
+hr { border: 0; height: 1px; background-color: var(--border-color); margin: 2.5rem 0; }
+dialog { border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); padding: 2rem; }
+dialog::backdrop { background-color: rgba(0, 0, 0, 0.5); }
+.action-button { background-color: #5cb85c; font-size: 0.8rem; padding: 0.4rem 0.8rem; margin-right: 5px; }
+.action-button.complete { background-color: #f0ad4e; }

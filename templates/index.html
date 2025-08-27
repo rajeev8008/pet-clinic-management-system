@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Clinic Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Pet Clinic Management System</h1>
+    </header>
+    <main class="container">
+        <section id="owner-management">
+            <h2>🧑‍🤝‍🧑 Owner Management</h2>
+            <form id="add-owner-form">
+                <h3>Register New Owner</h3>
+                <input type="text" id="firstName" placeholder="First Name" required>
+                <input type="text" id="lastName" placeholder="Last Name" required>
+                <input type="tel" id="phone" placeholder="Phone" required>
+                <input type="text" id="address" placeholder="Address">
+                <button type="submit">Add Owner</button>
+            </form>
+            <div id="owner-list-container">
+                <h3>Client List</h3>
+                <table id="owner-table">
+                    <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </section>
+
+        <hr>
+
+        <section id="appointment-scheduling">
+            <h2>📅 Appointment Scheduling</h2>
+            <form id="book-appointment-form">
+                <h3>Book New Appointment</h3>
+                <select id="appt-owner-select" required><option value="">-- Select Owner --</option></select>
+                <select id="appt-pet-select" required><option value="">-- Select Pet --</option></select>
+                <select id="appt-vet-select" required><option value="">-- Select Veterinarian --</option></select>
+                <input type="date" id="appt-date" required>
+                <input type="time" id="appt-time" required>
+                <input type="text" id="appt-reason" placeholder="Reason for visit" required>
+                <button type="submit">Book Appointment</button>
+            </form>
+        </section>
+
+        <hr>
+
+        <section id="schedule-view">
+             <h2>🗓️ Today's Schedule</h2>
+             <table id="schedule-table">
+                 <thead><tr><th>Time</th><th>Pet</th><th>Owner</th><th>Vet</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+                 <tbody></tbody>
+             </table>
+        </section>
+    </main>
+
+    <dialog id="add-pet-modal">
+        <form id="add-pet-form">
+            <h3>Register New Pet for <span id="pet-owner-name"></span></h3>
+            <input type="hidden" id="pet-owner-id">
+            <input type="text" id="pet-name" placeholder="Pet Name" required>
+            <input type="text" id="pet-species" placeholder="Species (e.g., Dog)" required>
+            <input type="text" id="pet-breed" placeholder="Breed" required>
+            <input type="number" id="pet-age" placeholder="Age" required>
+            <button type="submit">Save Pet</button>
+            <button type="button" id="close-pet-modal">Cancel</button>
+        </form>
+    </dialog>
+    
+    <dialog id="complete-visit-modal">
+        <form id="complete-visit-form">
+            <h3>Complete Visit & Bill for Appointment #<span id="visit-appt-id"></span></h3>
+            <input type="hidden" id="complete-appt-id">
+            <textarea id="visit-description" placeholder="Description of treatment" required></textarea>
+            <textarea id="visit-medicine" placeholder="Medicine prescribed" required></textarea>
+            <textarea id="visit-notes" placeholder="Vet Notes" required></textarea>
+            <input type="number" step="0.01" id="visit-cost" placeholder="Total Cost" required>
+            <button type="submit">Complete and Generate Bill</button>
+            <button type="button" id="close-visit-modal">Cancel</button>
+        </form>
+    </dialog>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
