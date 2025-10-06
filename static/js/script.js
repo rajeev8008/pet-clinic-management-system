@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    const API_BASE_URL = 'http://127.0.0.1:5001/api';
+    const API_BASE_URL = '/api';
 
     // --- Page specific logic ---
     if (document.querySelector('#schedule-view')) {
@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- INITIALIZERS ---
     function initializeSchedulePage() {
-        // This function is correct and does not need changes.
         const scheduleTableBody = document.querySelector('#schedule-table tbody');
         const bookAppointmentForm = document.getElementById('book-appointment-form');
         const apptOwnerSelect = document.getElementById('appt-owner-select');
@@ -112,11 +111,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function initializeOwnerPage() {
-        // This function is correct and does not need changes.
         const addOwnerForm = document.getElementById('add-owner-form');
         const ownerTableBody = document.querySelector('#owner-table tbody');
         const addPetModal = document.getElementById('add-pet-modal');
         const addPetForm = document.getElementById('add-pet-form');
+        const petDetailsContainer = document.getElementById('pet-details-container');
+        const petTableBody = document.querySelector('#pet-table tbody');
+        const manageVetsModal = document.getElementById('manage-vets-modal');
+        const manageVetsForm = document.getElementById('manage-vets-form');
 
         async function fetchAndRenderOwners() {
             const response = await fetch(`${API_BASE_URL}/owners`);
@@ -124,6 +126,8 @@ document.addEventListener('DOMContentLoaded', function() {
             ownerTableBody.innerHTML = '';
             owners.forEach(owner => {
                 const row = document.createElement('tr');
+                row.dataset.ownerId = owner.OwnerID;
+                row.dataset.ownerName = `${owner.FirstName} ${owner.LastName}`;
                 row.innerHTML = `
                     <td>${owner.FirstName} ${owner.LastName}</td>
                     <td>${owner.Phone}</td>
@@ -134,12 +138,41 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        async function showPetsForOwner(ownerId, ownerName) {
+            document.querySelectorAll('#owner-table tr.selected').forEach(r => r.classList.remove('selected'));
+            document.querySelector(`#owner-table tr[data-owner-id='${ownerId}']`).classList.add('selected');
+
+            petDetailsContainer.classList.remove('hidden');
+            document.getElementById('selected-owner-name').textContent = ownerName;
+            
+            const response = await fetch(`${API_BASE_URL}/owners/${ownerId}/pets`);
+            const pets = await response.json();
+            petTableBody.innerHTML = '';
+            pets.forEach(pet => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pet.Name}</td>
+                    <td>${pet.Species}</td>
+                    <td>${pet.Breed}</td>
+                    <td>${new Date(pet.DoB).toLocaleDateString()}</td>
+                    <td>${pet.Age}</td>
+                    <td><button class="action-button" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button></td>
+                `;
+                petTableBody.appendChild(row);
+            });
+        }
+        
+        ownerTableBody.addEventListener('click', (e) => {
+            const row = e.target.closest('tr');
+            if (!row || e.target.matches('button')) return;
+            showPetsForOwner(row.dataset.ownerId, row.dataset.ownerName);
+        });
+
         addOwnerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = {
                 firstName: document.getElementById('firstName').value, lastName: document.getElementById('lastName').value,
-                phone: document.getElementById('phone').value, 
-                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value, email: document.getElementById('email').value,
                 address: document.getElementById('address').value,
             };
             const response = await fetch(`${API_BASE_URL}/owners`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
@@ -155,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 e.preventDefault();
                 const formData = {
                     name: document.getElementById('pet-name').value, species: document.getElementById('pet-species').value,
-                    breed: document.getElementById('pet-breed').value, age: document.getElementById('pet-age').value,
+                    breed: document.getElementById('pet-breed').value, dob: document.getElementById('pet-dob').value,
                     ownerId: document.getElementById('pet-owner-id').value,
                 };
                 const response = await fetch(`${API_BASE_URL}/pets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
@@ -163,7 +196,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     alert('Pet added successfully!');
                     addPetForm.reset();
                     addPetModal.close();
+                    showPetsForOwner(formData.ownerId, document.getElementById('pet-owner-name').textContent);
                 } else { alert('Failed to add pet.'); }
+            });
+        }
+
+        if (manageVetsModal) {
+            manageVetsForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = {
+                    petId: document.getElementById('manage-pet-id').value,
+                    vetId: document.getElementById('vet-select').value,
+                    isPrimary: Boolean(document.getElementById('is-primary-vet-checkbox').checked),
+                };
+                const response = await fetch(`${API_BASE_URL}/vet-pet-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+                if (response.ok) {
+                    alert('Vet assigned successfully!');
+                    manageVetsModal.close();
+                    // refresh assigned vets list by re-opening the modal flow
+                } else { alert('Failed to assign vet.'); }
             });
         }
         
@@ -174,43 +225,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const billingTableBody = document.querySelector('#billing-table tbody');
         
         async function fetchAndRenderBills() {
-            try {
-                const response = await fetch(`${API_BASE_URL}/billing`);
-                const bills = await response.json();
-                
-                billingTableBody.innerHTML = '';
-                if (bills.length === 0) {
-                    billingTableBody.innerHTML = '<tr><td colspan="8" style="text-align:center;">No bills found.</td></tr>';
-                    return;
+            const response = await fetch(`${API_BASE_URL}/billing`);
+            const bills = await response.json();
+            billingTableBody.innerHTML = '';
+            bills.forEach(bill => {
+                const row = document.createElement('tr');
+                let actionButton = '';
+                if (bill.Status === 'Unpaid') {
+                    actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}">Process Payment</button>`;
                 }
-
-                bills.forEach(bill => {
-                    const row = document.createElement('tr');
-                    let actionButton = '';
-                    if (bill.Status === 'Unpaid') {
-                        actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}">Process Payment</button>`;
-                    }
-                    
-                    // --- THIS IS THE FIX ---
-                    // Convert bill.Amount to a number before calling toFixed()
-                    const amount = Number(bill.Amount);
-                    const formattedAmount = isNaN(amount) ? '0.00' : amount.toFixed(2);
-
-                    row.innerHTML = `
-                        <td>${bill.BillID}</td>
-                        <td>${new Date(bill.Date).toLocaleDateString()}</td>
-                        <td>${bill.FirstName} ${bill.LastName}</td>
-                        <td>${bill.PetName}</td>
-                        <td>$${formattedAmount}</td>
-                        <td>${bill.Status}</td>
-                        <td>${bill.Mode || 'N/A'}</td>
-                        <td>${actionButton}</td>
-                    `;
-                    billingTableBody.appendChild(row);
-                });
-            } catch (error) {
-                console.error("An error occurred while fetching bills:", error);
-            }
+                row.innerHTML = `
+                    <td>${bill.BillID}</td>
+                    <td>${new Date(bill.Date).toLocaleDateString()}</td>
+                    <td>${bill.FirstName} ${bill.LastName}</td>
+                    <td>${bill.PetName}</td>
+                    <td>$${Number(bill.Amount).toFixed(2)}</td>
+                    <td>${bill.Status}</td>
+                    <td>${bill.Mode || 'N/A'}</td>
+                    <td>${actionButton}</td>
+                `;
+                billingTableBody.appendChild(row);
+            });
         }
         
         fetchAndRenderBills();
@@ -238,19 +273,60 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // --- Global Event Listeners ---
-    document.body.addEventListener('click', (e) => {
+    document.body.addEventListener('click', async (e) => {
+        // Open "Add Pet" Modal
         if (e.target.matches('.action-button[data-owner-id]')) {
             const addPetModal = document.getElementById('add-pet-modal');
             document.getElementById('pet-owner-id').value = e.target.dataset.ownerId;
             document.getElementById('pet-owner-name').textContent = e.target.dataset.ownerName;
             addPetModal.showModal();
         }
+        // Open "Manage Vets" Modal
+        if (e.target.matches('#pet-table .action-button[data-pet-id]')) {
+            const petId = e.target.dataset.petId;
+            const petName = e.target.dataset.petName;
+            const vetSelect = document.getElementById('vet-select');
+            const assignedVetsList = document.getElementById('assigned-vets-list');
+            const manageVetsModal = document.getElementById('manage-vets-modal');
+            
+            document.getElementById('manage-pet-id').value = petId;
+            document.getElementById('manage-pet-name').textContent = petName;
+
+            const [allVetsRes, assignedVetsRes] = await Promise.all([
+                fetch(`${API_BASE_URL}/veterinarians`),
+                fetch(`${API_BASE_URL}/pets/${petId}/vets`)
+            ]);
+            const allVets = await allVetsRes.json();
+            const assignedVets = await assignedVetsRes.json();
+            
+            vetSelect.innerHTML = '<option value="">-- Select a vet to assign --</option>';
+            allVets.forEach(vet => {
+                const isAssigned = assignedVets.find(av => av.VetID === vet.VetID);
+                vetSelect.innerHTML += `<option value="${vet.VetID}">${vet.Name} ${isAssigned ? '(Already Assigned)' : ''}</option>`;
+            });
+
+            assignedVetsList.innerHTML = '<h4>Currently Assigned Vets:</h4>';
+            if (assignedVets.length > 0) {
+                let listHTML = '<ul>';
+                assignedVets.forEach(vet => {
+                    listHTML += `<li>${vet.Name} ${vet.is_primary_vet ? '<strong>(Primary)</strong>' : ''}</li>`;
+                });
+                listHTML += '</ul>';
+                assignedVetsList.innerHTML += listHTML;
+            } else {
+                assignedVetsList.innerHTML += '<p>No vets assigned yet.</p>';
+            }
+
+            manageVetsModal.showModal();
+        }
+        // Open "Complete Visit" Modal
         if (e.target.matches('.action-button.complete')) {
             const completeVisitModal = document.getElementById('complete-visit-modal');
             document.getElementById('complete-appt-id').value = e.target.dataset.apptId;
             document.getElementById('visit-appt-id').textContent = e.target.dataset.apptId;
             completeVisitModal.showModal();
         }
+        // Close any modal
         if (e.target.matches('.close-modal-btn')) {
             e.target.closest('dialog').close();
         }
