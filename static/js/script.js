@@ -1,5 +1,29 @@
 document.addEventListener('DOMContentLoaded', function() {
     const API_BASE_URL = '/api';
+    // --- UI helpers: global message, field errors, loading indicator ---
+    function showGlobalMessage(text, type = 'success', timeout = 4000) {
+        const el = document.getElementById('global-message');
+        if (!el) return;
+        el.className = ''; // clear
+        el.classList.add(type === 'error' ? 'error' : 'success');
+        el.textContent = text;
+        el.classList.remove('hidden');
+        if (timeout) setTimeout(() => el.classList.add('hidden'), timeout);
+    }
+
+    function showFieldError(fieldId, message) {
+        const err = document.getElementById(`error-${fieldId}`);
+        if (!err) return;
+        err.textContent = message;
+        err.classList.add('visible');
+    }
+
+    function clearFieldErrors(formRoot = document) {
+        formRoot.querySelectorAll('.field-error').forEach(e => { e.textContent = ''; e.classList.remove('visible'); });
+    }
+
+    function showLoading() { const o = document.getElementById('loading-overlay'); if (o) o.classList.remove('hidden'); }
+    function hideLoading() { const o = document.getElementById('loading-overlay'); if (o) o.classList.add('hidden'); }
 
     // --- Page specific logic ---
     if (document.querySelector('#schedule-view')) {
@@ -71,17 +95,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         bookAppointmentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            clearFieldErrors(bookAppointmentForm);
             const formData = {
                 petId: document.getElementById('appt-pet-select').value, vetId: document.getElementById('appt-vet-select').value,
                 date: document.getElementById('appt-date').value, time: document.getElementById('appt-time').value,
                 reason: document.getElementById('appt-reason').value,
             };
+            // basic client-side validation
+            let valid = true;
+            if (!formData.date) { showFieldError('appt-date', 'Date is required'); valid = false; }
+            if (!formData.time) { showFieldError('appt-time', 'Time is required'); valid = false; }
+            if (!formData.reason) { showFieldError('appt-reason', 'Reason is required'); valid = false; }
+            if (!valid) return;
+            showLoading();
             const response = await fetch(`${API_BASE_URL}/appointments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+            hideLoading();
             if (response.ok) {
-                alert('Appointment booked!');
+                showGlobalMessage('Appointment booked!', 'success');
                 bookAppointmentForm.reset();
                 fetchAndRenderAppointments();
-            } else { alert('Failed to book appointment.'); }
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showGlobalMessage(err.message || 'Failed to book appointment.', 'error');
+            }
         });
 
         if(completeVisitModal) {
@@ -94,14 +130,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     notes: document.getElementById('visit-notes').value, cost: document.getElementById('visit-cost').value,
                 };
                 const response = await fetch(`${API_BASE_URL}/appointments/${appId}/complete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+                hideLoading();
                 if (response.ok) {
-                    alert('Visit completed and bill generated!');
+                    showGlobalMessage('Visit completed and bill generated!', 'success');
                     completeVisitForm.reset();
                     completeVisitModal.close();
                     fetchAndRenderAppointments();
-                } else { 
-                    const error = await response.json();
-                    alert(`Failed to complete visit: ${error.message}`);
+                } else {
+                    const error = await response.json().catch(() => ({}));
+                    showGlobalMessage(`Failed to complete visit: ${error.message || 'Unknown error'}`, 'error');
                 }
             });
         }
@@ -177,10 +214,13 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             const response = await fetch(`${API_BASE_URL}/owners`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
             if (response.ok) {
-                alert('Owner added!');
+                showGlobalMessage('Owner added!', 'success');
                 addOwnerForm.reset();
                 fetchAndRenderOwners();
-            } else { alert('Failed to add owner.'); }
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showGlobalMessage(err.message || 'Failed to add owner.', 'error');
+            }
         });
 
         if (addPetModal) {
@@ -193,11 +233,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 const response = await fetch(`${API_BASE_URL}/pets`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
                 if (response.ok) {
-                    alert('Pet added successfully!');
+                    showGlobalMessage('Pet added successfully!', 'success');
                     addPetForm.reset();
                     addPetModal.close();
                     showPetsForOwner(formData.ownerId, document.getElementById('pet-owner-name').textContent);
-                } else { alert('Failed to add pet.'); }
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to add pet.', 'error');
+                }
             });
         }
 
@@ -211,10 +254,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 const response = await fetch(`${API_BASE_URL}/vet-pet-link`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
                 if (response.ok) {
-                    alert('Vet assigned successfully!');
+                    showGlobalMessage('Vet assigned successfully!', 'success');
                     manageVetsModal.close();
-                    // refresh assigned vets list by re-opening the modal flow
-                } else { alert('Failed to assign vet.'); }
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to assign vet.', 'error');
+                }
             });
         }
         
@@ -256,16 +301,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 const billId = e.target.dataset.billId;
                 const mode = prompt("Enter payment mode (e.g., Cash, Card):");
                 if (mode) {
+                    showLoading();
                     const response = await fetch(`${API_BASE_URL}/billing/${appId}/${billId}/pay`, { 
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ mode: mode })
                     });
+                    hideLoading();
                     if (response.ok) {
-                        alert('Payment processed!');
+                        showGlobalMessage('Payment processed!', 'success');
                         fetchAndRenderBills(); // Refresh the list
                     } else {
-                        alert('Failed to process payment.');
+                        const err = await response.json().catch(() => ({}));
+                        showGlobalMessage(err.message || 'Failed to process payment.', 'error');
                     }
                 }
             }

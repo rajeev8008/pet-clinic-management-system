@@ -1,15 +1,18 @@
 {% extends "layout.html" %}
 {% block content %}
 <section id="schedule-view">
-    <h2>🗓️ Appointment Scheduling</h2>
+    <h2> Appointment Scheduling</h2>
     <form id="book-appointment-form">
         <h3>Book New Appointment</h3>
         <select id="appt-owner-select" required><option value="">-- Select Owner --</option></select>
         <select id="appt-pet-select" required><option value="">-- Select Pet --</option></select>
         <select id="appt-vet-select" required><option value="">-- Select Veterinarian --</option></select>
         <input type="date" id="appt-date" required>
+    <div id="error-appt-date" class="field-error"></div>
         <input type="time" id="appt-time" required>
+    <div id="error-appt-time" class="field-error"></div>
         <input type="text" id="appt-reason" placeholder="Reason for visit" required>
+    <div id="error-appt-reason" class="field-error"></div>
         <button type="submit">Book Appointment</button>
     </form>
     <hr>
@@ -28,6 +31,7 @@
         <textarea id="visit-medicine" placeholder="Medicine prescribed" required></textarea>
         <textarea id="visit-notes" placeholder="Vet Notes" required></textarea>
         <input type="number" step="0.01" id="visit-cost" placeholder="Total Cost" required>
+    <div id="error-visit-cost" class="field-error"></div>
         <button type="submit">Complete and Generate Bill</button>
         <button type="button" class="close-modal-btn">Cancel</button>
     </form>

@@ -34,3 +34,19 @@ dialog::backdrop { background-color: rgba(0, 0, 0, 0.5); }
 label { margin-top: 0.5rem; font-weight: bold; }
 #assigned-vets-list ul { list-style-type: none; padding-left: 0; }
 #assigned-vets-list li { background-color: #f0f0f0; padding: 5px 10px; border-radius: 4px; margin-bottom: 5px; }
+
+/* Global message (success / error) */
+#global-message { max-width: 1200px; margin: 1rem auto; padding: 0.75rem 1rem; border-radius: 6px; font-weight: 600; text-align: center; }
+#global-message.hidden { display: none; }
+#global-message.success { background-color: #e9f8ef; color: #165f3b; border: 1px solid #b6e6c8; }
+#global-message.error { background-color: #ffecec; color: #7a1a1a; border: 1px solid #f1b3b3; }
+
+/* Loading overlay and spinner */
+#loading-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+#loading-overlay.hidden { display: none; }
+.spinner { width: 56px; height: 56px; border-radius: 50%; border: 6px solid rgba(255,255,255,0.25); border-top-color: white; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Inline field error */
+.field-error { color: #b00020; font-size: 0.9rem; margin-top: -0.25rem; margin-bottom: 0.5rem; display: none; }
+.field-error.visible { display: block; }

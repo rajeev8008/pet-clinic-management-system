@@ -16,8 +16,14 @@
         </nav>
     </header>
     <main class="container">
+        <!-- Global message area (success/error) -->
+        <div id="global-message" class="hidden" role="status" aria-live="polite"></div>
         {% block content %}{% endblock %}
     </main>
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="hidden" aria-hidden="true">
+        <div class="spinner" role="status" aria-hidden="false"></div>
+    </div>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>

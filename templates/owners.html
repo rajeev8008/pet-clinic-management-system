@@ -1,14 +1,19 @@
 {% extends "layout.html" %}
 {% block content %}
 <section id="owner-management">
-    <h2>🧑‍🤝‍🧑 Owner & Pet Management</h2>
+    <h2> Owner & Pet Management</h2>
     <form id="add-owner-form">
         <h3>Register New Owner</h3>
         <input type="text" id="firstName" placeholder="First Name" required>
+        <div id="error-firstName" class="field-error"></div>
         <input type="text" id="lastName" placeholder="Last Name" required>
+        <div id="error-lastName" class="field-error"></div>
         <input type="tel" id="phone" placeholder="Phone" required>
+        <div id="error-phone" class="field-error"></div>
         <input type="email" id="email" placeholder="Email">
+        <div id="error-email" class="field-error"></div>
         <input type="text" id="address" placeholder="Address">
+        <div id="error-address" class="field-error"></div>
         <button type="submit">Add Owner</button>
     </form>
     <hr>
