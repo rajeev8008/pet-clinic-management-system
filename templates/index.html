@@ -90,12 +90,29 @@
     
     <hr>
     
-    <h3>Upcoming Appointments</h3>
-    <div class="table-wrapper">
-        <table id="schedule-table">
-            <thead><tr><th>Date & Time</th><th>Pet</th><th>Owner</th><th>Veterinarian</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <div class="collapsible-section">
+        <button class="collapsible-toggle" id="appointments-toggle">
+            <span class="toggle-icon">▼</span>
+            <span class="toggle-label">Upcoming Appointments</span>
+            <span class="toggle-count" id="appt-count">(0)</span>
+        </button>
+        <div class="collapsible-content" id="appointments-content">
+            <div class="filter-section">
+                <input type="date" id="appt-date-filter" class="filter-input" placeholder="Filter by date">
+                <select id="appt-status-filter" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Canceled">Canceled</option>
+                </select>
+            </div>
+            <div class="table-wrapper">
+                <table id="schedule-table">
+                    <thead><tr><th>Date & Time</th><th>Pet</th><th>Owner</th><th>Veterinarian</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -123,6 +140,20 @@
         </div>
         <div class="button-group">
             <button type="submit" class="btn-primary">Complete & Generate Bill</button>
+            <button type="button" class="close-modal-btn">Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="remove-appointment-modal">
+    <form id="remove-appointment-form">
+        <h3>Remove Completed Appointment</h3>
+        <p class="appointment-ref">Appointment #<span id="remove-appt-id"></span></p>
+        <input type="hidden" id="remove-appt-id-hidden">
+        <p class="modal-warning">Are you sure you want to remove this completed appointment from the list?</p>
+        <p class="modal-info">This action cannot be undone. The appointment will be archived.</p>
+        <div class="button-group">
+            <button type="submit" class="btn-danger">Remove Appointment</button>
             <button type="button" class="close-modal-btn">Cancel</button>
         </div>
     </form>

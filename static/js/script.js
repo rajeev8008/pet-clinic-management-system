@@ -58,16 +58,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const apptPetSelect = document.getElementById('appt-pet-select');
         const apptVetSelect = document.getElementById('appt-vet-select');
         const completeVisitModal = document.getElementById('complete-visit-modal');
+        const removeApptModal = document.getElementById('remove-appointment-modal');
+        const appointmentsToggle = document.getElementById('appointments-toggle');
+        const appointmentsContent = document.getElementById('appointments-content');
+        const apptCount = document.getElementById('appt-count');
         
         async function fetchAndRenderAppointments() {
             const response = await fetch(`${API_BASE_URL}/appointments`);
             const appointments = await response.json();
+            apptCount.textContent = `(${appointments.length})`;
             scheduleTableBody.innerHTML = '';
             appointments.forEach(appt => {
                 const row = document.createElement('tr');
                 let actions = '';
                 if (appt.Status === 'Scheduled') {
                     actions = `<button class="action-button complete" data-appt-id="${appt.AppID}">Complete Visit</button>`;
+                } else if (appt.Status === 'Completed') {
+                    actions = `<button class="action-button remove" data-appt-id="${appt.AppID}">Remove</button>`;
                 }
                 row.innerHTML = `
                     <td>${new Date(appt.Date).toLocaleDateString()} ${appt.Time}</td>
@@ -177,6 +184,116 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+
+        // Remove Appointment Modal Handler
+        if(removeApptModal) {
+            const removeApptForm = document.getElementById('remove-appointment-form');
+            removeApptForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const appId = document.getElementById('remove-appt-id-hidden').value;
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/appointments/${appId}`, { method: 'DELETE' });
+                hideLoading();
+                if (response.ok) {
+                    showGlobalMessage('Appointment removed successfully!', 'success');
+                    removeApptForm.reset();
+                    removeApptModal.close();
+                    fetchAndRenderAppointments();
+                } else {
+                    const error = await response.json().catch(() => ({}));
+                    showGlobalMessage(error.message || 'Failed to remove appointment', 'error');
+                }
+            });
+        }
+
+        // Collapsible Toggle Handler
+        if(appointmentsToggle) {
+            appointmentsToggle.addEventListener('click', () => {
+                appointmentsToggle.classList.toggle('collapsed');
+                appointmentsContent.classList.toggle('collapsed');
+            });
+        }
+
+        // --- FILTER FUNCTIONALITY FOR APPOINTMENTS ---
+        // Store all appointments for filtering
+        let allAppointments = [];
+        const originalFetchAndRenderAppointments = fetchAndRenderAppointments;
+        fetchAndRenderAppointments = async function() {
+            const response = await fetch(`${API_BASE_URL}/appointments`);
+            allAppointments = await response.json();
+            apptCount.textContent = `(${allAppointments.length})`;
+            scheduleTableBody.innerHTML = '';
+            allAppointments.forEach(appt => renderAppointmentRow(appt));
+        };
+
+        function renderAppointmentRow(appt) {
+            const row = document.createElement('tr');
+            let actions = '';
+            if (appt.Status === 'Scheduled') {
+                actions = `<button class="action-button complete" data-appt-id="${appt.AppID}">Complete Visit</button>`;
+            } else if (appt.Status === 'Completed') {
+                actions = `<button class="action-button remove" data-appt-id="${appt.AppID}">Remove</button>`;
+            }
+            row.innerHTML = `
+                <td>${new Date(appt.Date).toLocaleDateString()} ${appt.Time}</td>
+                <td>${appt.PetName}</td>
+                <td>${appt.FirstName} ${appt.LastName}</td>
+                <td>${appt.VetName}</td>
+                <td>${appt.Reason}</td>
+                <td>${appt.Status}</td>
+                <td>${actions}</td>
+            `;
+            row.dataset.date = appt.Date;
+            row.dataset.status = appt.Status;
+            scheduleTableBody.appendChild(row);
+        }
+
+        const apptDateFilter = document.getElementById('appt-date-filter');
+        const apptStatusFilter = document.getElementById('appt-status-filter');
+
+        function applyAppointmentFilters() {
+            const selectedDate = apptDateFilter ? apptDateFilter.value : '';
+            const selectedStatus = apptStatusFilter ? apptStatusFilter.value : '';
+            
+            const rows = scheduleTableBody.querySelectorAll('tr');
+            let visibleCount = 0;
+            
+            rows.forEach(row => {
+                let showRow = true;
+                
+                if (selectedDate) {
+                    const rowDate = row.dataset.date.split('T')[0];
+                    const filterDate = selectedDate;
+                    showRow = showRow && (rowDate === filterDate);
+                }
+                
+                if (selectedStatus) {
+                    showRow = showRow && (row.dataset.status === selectedStatus);
+                }
+                
+                row.style.display = showRow ? '' : 'none';
+                if (showRow) visibleCount++;
+            });
+            
+            apptCount.textContent = `(${visibleCount})`;
+        }
+
+        if (apptDateFilter) {
+            apptDateFilter.addEventListener('change', applyAppointmentFilters);
+        }
+        if (apptStatusFilter) {
+            apptStatusFilter.addEventListener('change', applyAppointmentFilters);
+        }
+
+        // Event delegation for Remove button
+        scheduleTableBody.addEventListener('click', (e) => {
+            if (e.target.classList.contains('remove')) {
+                const appId = e.target.dataset.apptId;
+                removeApptModal.showModal();
+                document.getElementById('remove-appt-id').textContent = appId;
+                document.getElementById('remove-appt-id-hidden').value = appId;
+            }
+        });
 
         populateAppointmentDropdowns();
         fetchAndRenderAppointments();
@@ -383,6 +500,85 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Collapsible Toggle Handlers for Owner Page
+        const clientsToggle = document.getElementById('clients-toggle');
+        const clientsContent = document.getElementById('clients-content');
+        const clientCount = document.getElementById('client-count');
+        const petsToggle = document.getElementById('pets-toggle');
+        const petsContent = document.getElementById('pets-content');
+        const petCount = document.getElementById('pet-count');
+
+        if(clientsToggle) {
+            clientsToggle.addEventListener('click', () => {
+                clientsToggle.classList.toggle('collapsed');
+                clientsContent.classList.toggle('collapsed');
+            });
+            // Update client count
+            ownerTableBody.addEventListener('change', () => {
+                clientCount.textContent = `(${ownerTableBody.querySelectorAll('tr').length})`;
+            });
+        }
+
+        if(petsToggle) {
+            petsToggle.addEventListener('click', () => {
+                petsToggle.classList.toggle('collapsed');
+                petsContent.classList.toggle('collapsed');
+            });
+            // Update pet count
+            petTableBody.addEventListener('change', () => {
+                petCount.textContent = `(${petTableBody.querySelectorAll('tr').length})`;
+            });
+        }
+
+        // Update counts when data is rendered
+        function updateCounts() {
+            clientCount.textContent = `(${ownerTableBody.querySelectorAll('tr').length})`;
+            petCount.textContent = `(${petTableBody.querySelectorAll('tr').length})`;
+        }
+
+        // --- FILTER FUNCTIONALITY ---
+        // Search owners by name or phone
+        const ownerSearchInput = document.getElementById('owner-search-input');
+        if (ownerSearchInput) {
+            ownerSearchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = ownerTableBody.querySelectorAll('tr');
+                let visibleCount = 0;
+                rows.forEach(row => {
+                    const name = row.cells[0].textContent.toLowerCase();
+                    const phone = row.cells[1].textContent.toLowerCase();
+                    const matches = name.includes(searchTerm) || phone.includes(searchTerm);
+                    row.style.display = matches ? '' : 'none';
+                    if (matches) visibleCount++;
+                });
+                clientCount.textContent = `(${visibleCount})`;
+            });
+        }
+
+        // Filter pets by species
+        const petSpeciesFilter = document.getElementById('pet-species-filter');
+        if (petSpeciesFilter) {
+            petSpeciesFilter.addEventListener('change', (e) => {
+                const filterSpecies = e.target.value.toLowerCase();
+                const rows = petTableBody.querySelectorAll('tr');
+                let visibleCount = 0;
+                rows.forEach(row => {
+                    const species = row.cells[1].textContent.toLowerCase();
+                    const matches = !filterSpecies || species.includes(filterSpecies);
+                    row.style.display = matches ? '' : 'none';
+                    if (matches) visibleCount++;
+                });
+                petCount.textContent = `(${visibleCount})`;
+            });
+        }
+
+        // Hook into existing render functions
+        const originalFetchAndRenderOwners = fetchAndRenderOwners;
+        fetchAndRenderOwners = async function() {
+            await originalFetchAndRenderOwners();
+            updateCounts();
+        };
+        
         fetchAndRenderOwners();
     }
 
@@ -390,19 +586,25 @@ document.addEventListener('DOMContentLoaded', function() {
         const billingTableBody = document.querySelector('#billing-table tbody');
         const processPaymentModal = document.getElementById('process-payment-modal');
         const processPaymentForm = document.getElementById('process-payment-form');
+        const billsToggle = document.getElementById('bills-toggle');
+        const billsContent = document.getElementById('bills-content');
+        const billsCount = document.getElementById('bills-count');
+        
+        // Store all bills for filtering
+        let allBills = [];
         
         // Load and display billing statistics
         async function fetchAndRenderStats() {
             try {
                 // Fetch all bills to calculate stats
                 const billsResponse = await fetch(`${API_BASE_URL}/billing`);
-                const bills = await billsResponse.json();
+                allBills = await billsResponse.json();
                 
                 let totalBills = 0;
                 let paidCount = 0;
                 let unpaidCount = 0;
                 
-                bills.forEach(bill => {
+                allBills.forEach(bill => {
                     totalBills++;
                     if (bill.Status === 'Paid') {
                         paidCount++;
@@ -415,6 +617,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('stat-total-bills').textContent = totalBills;
                 document.getElementById('stat-paid-bills').textContent = paidCount;
                 document.getElementById('stat-unpaid-bills').textContent = unpaidCount;
+                
+                // Update bills count
+                if(billsCount) {
+                    billsCount.textContent = `(${totalBills})`;
+                }
             } catch (err) {
                 console.error('Failed to load billing stats:', err);
             }
@@ -422,7 +629,11 @@ document.addEventListener('DOMContentLoaded', function() {
         
         async function fetchAndRenderBills() {
             const response = await fetch(`${API_BASE_URL}/billing`);
-            const bills = await response.json();
+            allBills = await response.json();
+            renderBillsTable(allBills);
+        }
+
+        function renderBillsTable(bills) {
             billingTableBody.innerHTML = '';
             bills.forEach(bill => {
                 const row = document.createElement('tr');
@@ -440,7 +651,33 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${bill.Mode || 'N/A'}</td>
                     <td>${actionButton}</td>
                 `;
+                row.dataset.status = bill.Status;
                 billingTableBody.appendChild(row);
+            });
+            
+            // Update count
+            if(billsCount) {
+                billsCount.textContent = `(${bills.length})`;
+            }
+        }
+        
+        // Collapsible Toggle Handler for Bills
+        if(billsToggle) {
+            billsToggle.addEventListener('click', () => {
+                billsToggle.classList.toggle('collapsed');
+                billsContent.classList.toggle('collapsed');
+            });
+        }
+
+        // --- FILTER FUNCTIONALITY FOR BILLS ---
+        const billStatusFilter = document.getElementById('bill-status-filter');
+        if (billStatusFilter) {
+            billStatusFilter.addEventListener('change', (e) => {
+                const selectedStatus = e.target.value;
+                const filteredBills = selectedStatus 
+                    ? allBills.filter(bill => bill.Status === selectedStatus)
+                    : allBills;
+                renderBillsTable(filteredBills);
             });
         }
         
