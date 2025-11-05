@@ -985,3 +985,157 @@ label {
 .checkbox-group span {
     font-weight: 500;
 }
+
+/* Collapsible Section Styles */
+.collapsible-section {
+    margin-bottom: 2rem;
+}
+
+.collapsible-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.2);
+    text-align: left;
+}
+
+.collapsible-toggle:hover {
+    background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    box-shadow: 0 6px 16px rgba(46, 125, 50, 0.3);
+    transform: translateY(-2px);
+}
+
+.toggle-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+    min-width: 20px;
+}
+
+.collapsible-toggle.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.toggle-label {
+    flex: 1;
+}
+
+.toggle-count {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.collapsible-content {
+    background: white;
+    border: 2px solid var(--primary-color);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    opacity: 1;
+}
+
+.filter-section {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.search-input, .filter-input, .filter-select {
+    padding: 0.75rem 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background-color: #FAFAFA;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.search-input:focus, .filter-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+}
+
+.search-input {
+    flex: 1;
+    min-width: 250px;
+}
+
+.filter-input, .filter-select {
+    min-width: 180px;
+}
+
+.filter-select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.2em 1.2em;
+    padding-right: 2.5rem;
+}
+
+.collapsible-content.collapsed {
+    max-height: 0;
+    opacity: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+/* Modal styles for remove appointment */
+.btn-danger {
+    background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #C62828 0%, #B71C1C 100%);
+    box-shadow: 0 6px 16px rgba(229, 57, 53, 0.3);
+    transform: translateY(-2px);
+}
+
+.modal-warning {
+    color: #E53935;
+    font-weight: 600;
+    margin: 1rem 0 0.5rem 0;
+    padding: 0.75rem 1rem;
+    background: #FFEBEE;
+    border-left: 4px solid #E53935;
+    border-radius: 4px;
+}
+
+.modal-info {
+    color: var(--medium-color);
+    font-size: 0.95rem;
+    margin: 0.5rem 0 0 0;
+}

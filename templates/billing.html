@@ -18,14 +18,28 @@
         </div>
     </div>
     
-    <h3>Outstanding Bills</h3>
-    <p class="section-hint">Manage and track all billing records for appointments</p>
-    
-    <div class="table-wrapper">
-        <table id="billing-table">
-            <thead><tr><th>Bill ID</th><th>Date</th><th>Client Name</th><th>Pet Name</th><th>Amount</th><th>Status</th><th>Payment Mode</th><th>Actions</th></tr></thead>
-            <tbody></tbody>
-        </table>
+    <div class="collapsible-section">
+        <button class="collapsible-toggle" id="bills-toggle">
+            <span class="toggle-icon">▼</span>
+            <span class="toggle-label">Outstanding Bills</span>
+            <span class="toggle-count" id="bills-count">(0)</span>
+        </button>
+        <div class="collapsible-content" id="bills-content">
+            <p class="section-hint">Manage and track all billing records for appointments</p>
+            <div class="filter-section">
+                <select id="bill-status-filter" class="filter-select">
+                    <option value="">All Bills</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Unpaid">Unpaid</option>
+                </select>
+            </div>
+            <div class="table-wrapper">
+                <table id="billing-table">
+                    <thead><tr><th>Bill ID</th><th>Date</th><th>Client Name</th><th>Pet Name</th><th>Amount</th><th>Status</th><th>Payment Mode</th><th>Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </section>
 

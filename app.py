@@ -287,6 +287,44 @@ def complete_visit(app_id):
         except Exception:
             pass
 
+@app.route('/api/appointments/<int:app_id>', methods=['DELETE'])
+def delete_appointment(app_id):
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'message': 'Database connection failed'}), 500
+    try:
+        cursor = connection.cursor()
+        sql_check = "SELECT Status FROM Appointment WHERE AppID = %s"
+        cursor.execute(sql_check, (app_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'message': 'Appointment not found'}), 404
+        if result[0] != 'Completed':
+            return jsonify({'message': 'Only completed appointments can be removed'}), 400
+        sql_delete_treatment = "DELETE FROM Treatment_Record WHERE AppID = %s"
+        cursor.execute(sql_delete_treatment, (app_id,))
+        sql_delete_billing = "DELETE FROM Billing WHERE AppID = %s"
+        cursor.execute(sql_delete_billing, (app_id,))
+        sql_delete_appt = "DELETE FROM Appointment WHERE AppID = %s"
+        cursor.execute(sql_delete_appt, (app_id,))
+        connection.commit()
+        return jsonify({'message': 'Appointment removed successfully!'})
+    except Error as e:
+        connection.rollback()
+        print(f"Delete failed: {e}")
+        return jsonify({'message': f'Delete failed: {e}'}), 500
+    finally:
+        try:
+            if 'cursor' in locals() and cursor:
+                cursor.close()
+        except Exception:
+            pass
+        try:
+            if connection and connection.is_connected():
+                connection.close()
+        except Exception:
+            pass
+
 @app.route('/api/billing', methods=['GET'])
 def get_bills():
     connection = create_db_connection()

@@ -102,27 +102,54 @@
     
     <hr>
     
-    <div id="owner-list-container">
-        <h3>Client List</h3>
-        <p class="list-hint">Click on any owner to view and manage their pets</p>
-        <div class="table-wrapper">
-            <table id="owner-table">
-                <thead><tr><th>Owner Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
-                <tbody></tbody>
-            </table>
+    <div class="collapsible-section">
+        <button class="collapsible-toggle" id="clients-toggle">
+            <span class="toggle-icon">▼</span>
+            <span class="toggle-label">Client List</span>
+            <span class="toggle-count" id="client-count">(0)</span>
+        </button>
+        <div class="collapsible-content" id="clients-content">
+            <p class="list-hint">Click on any owner to view and manage their pets</p>
+            <div class="filter-section">
+                <input type="text" id="owner-search-input" placeholder="🔍 Search by name or phone..." class="search-input">
+            </div>
+            <div class="table-wrapper">
+                <table id="owner-table">
+                    <thead><tr><th>Owner Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <div id="pet-details-container" class="hidden">
-        <div class="pet-section-header">
-            <h3>Pets for <span id="selected-owner-name" class="owner-name-highlight"></span></h3>
-            <p class="section-hint">Manage and view details of all pets owned by this client</p>
-        </div>
-        <div class="table-wrapper">
-            <table id="pet-table">
-                <thead><tr><th>Pet Name</th><th>Species</th><th>Breed</th><th>Date of Birth</th><th>Age</th><th>Actions</th></tr></thead>
-                <tbody></tbody>
-            </table>
+        <div class="collapsible-section">
+            <button class="collapsible-toggle" id="pets-toggle">
+                <span class="toggle-icon">▼</span>
+                <span class="toggle-label">Pets for <span id="selected-owner-name" class="owner-name-highlight"></span></span>
+                <span class="toggle-count" id="pet-count">(0)</span>
+            </button>
+            <div class="collapsible-content" id="pets-content">
+                <p class="section-hint">Manage and view details of all pets owned by this client</p>
+                <div class="filter-section">
+                    <select id="pet-species-filter" class="filter-select">
+                        <option value="">All Species</option>
+                        <option value="Dog">Dog</option>
+                        <option value="Cat">Cat</option>
+                        <option value="Bird">Bird</option>
+                        <option value="Rabbit">Rabbit</option>
+                        <option value="Hamster">Hamster</option>
+                        <option value="Fish">Fish</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="table-wrapper">
+                    <table id="pet-table">
+                        <thead><tr><th>Pet Name</th><th>Species</th><th>Breed</th><th>Date of Birth</th><th>Age</th><th>Actions</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </section>
