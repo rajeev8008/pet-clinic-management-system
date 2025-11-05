@@ -1,5 +1,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     const API_BASE_URL = '/api';
+    
+    // validation helpers
+    function validateEmail(email) {
+        if (!email) return true; // optional field
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+    function validatePhone(phone) {
+        if (!phone) return false;
+        const cleaned = phone.replace(/[\s\-\(\)\.]/g, '');
+        const re = /^\+?\d{7,15}$/;
+        return re.test(cleaned);
+    }
+    
     // --- UI helpers: global message, field errors, loading indicator ---
     function showGlobalMessage(text, type = 'success', timeout = 4000) {
         const el = document.getElementById('global-message');
@@ -193,7 +207,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${pet.Breed}</td>
                     <td>${new Date(pet.DoB).toLocaleDateString()}</td>
                     <td>${pet.Age}</td>
-                    <td><button class="action-button" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button></td>
+                    <td>
+                      <button class="action-button view-history" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">View History</button>
+                      <button class="action-button" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button>
+                    </td>
                 `;
                 petTableBody.appendChild(row);
             });
@@ -207,12 +224,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         addOwnerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            clearFieldErrors(addOwnerForm);
             const formData = {
                 firstName: document.getElementById('firstName').value, lastName: document.getElementById('lastName').value,
                 phone: document.getElementById('phone').value, email: document.getElementById('email').value,
                 address: document.getElementById('address').value,
             };
+            // Add client-side validation before submit
+            let valid = true;
+            if (!formData.firstName) { showFieldError('firstName', 'First name required'); valid = false; }
+            if (!formData.lastName) { showFieldError('lastName', 'Last name required'); valid = false; }
+            if (!formData.phone) { showFieldError('phone', 'Phone is required'); valid = false; }
+            else if (!validatePhone(formData.phone)) { showFieldError('phone', 'Invalid phone format (7–15 digits, optional +)'); valid = false; }
+            if (formData.email && !validateEmail(formData.email)) { showFieldError('email', 'Invalid email format'); valid = false; }
+            if (!formData.address) { showFieldError('address', 'Address is required'); valid = false; }
+            if (!valid) return;
+
+            showLoading();
             const response = await fetch(`${API_BASE_URL}/owners`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(formData) });
+            hideLoading();
             if (response.ok) {
                 showGlobalMessage('Owner added!', 'success');
                 addOwnerForm.reset();
@@ -322,6 +352,48 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Global Event Listeners ---
     document.body.addEventListener('click', async (e) => {
+        // View pet history
+        if (e.target.matches('.view-history')) {
+            const petId = e.target.dataset.petId;
+            const petName = e.target.dataset.petName;
+            const modal = document.getElementById('pet-history-modal');
+            const petInfo = document.getElementById('pet-info');
+            const tbody = document.querySelector('#pet-history-table tbody');
+            petInfo.innerHTML = `<strong>${petName}</strong>`;
+            tbody.innerHTML = '';
+            showLoading();
+            try {
+                const res = await fetch(`${API_BASE_URL}/pet-history/${petId}`);
+                hideLoading();
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({message:'Failed to load history'}));
+                    showGlobalMessage(err.message || 'Failed to load pet history', 'error');
+                    return;
+                }
+                const rows = await res.json();
+                if (rows.length > 0) {
+                    const r0 = rows[0];
+                    petInfo.innerHTML = `
+                        <div><strong>Pet:</strong> ${r0.PetName} (${r0.Species} / ${r0.Breed})</div>
+                        <div><strong>DOB:</strong> ${r0.DoB ? new Date(r0.DoB).toLocaleDateString() : ''}</div>
+                        <div><strong>Owner:</strong> ${r0.FirstName} ${r0.LastName} — ${r0.OwnerPhone || ''}</div>
+                    `;
+                    rows.forEach(r => {
+                        if (r.AppointmentDate) {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `<td>${new Date(r.AppointmentDate).toLocaleDateString()}</td><td>${r.Reason || ''}</td><td>${r.VetName || ''}</td>`;
+                            tbody.appendChild(tr);
+                        }
+                    });
+                } else {
+                    petInfo.innerHTML = '<div>No history found for this pet.</div>';
+                }
+                modal.showModal();
+            } catch (err) {
+                hideLoading();
+                showGlobalMessage('Network error while loading pet history', 'error');
+            }
+        }
         // Open "Add Pet" Modal
         if (e.target.matches('.action-button[data-owner-id]')) {
             const addPetModal = document.getElementById('add-pet-modal');

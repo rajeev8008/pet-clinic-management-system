@@ -3,6 +3,8 @@ import os
 import mysql.connector
 from mysql.connector import Error
 import time
+import re
+import datetime
 
 app = Flask(__name__)
 
@@ -50,6 +52,19 @@ def add_owner():
     if missing:
         return jsonify({'message': f"Missing required owner fields: {', '.join(missing)}"}), 400
 
+    # server-side format validation for phone and email
+    phone = data.get('phone', '').strip()
+    email = data.get('email', '').strip() if data.get('email') else ''
+    
+    # normalize phone (allow spaces, dashes, parens) then check digits
+    cleaned_phone = re.sub(r'[\s\-\(\)\.]+', '', phone)
+    if not re.fullmatch(r'\+?\d{7,15}', cleaned_phone):
+        return jsonify({'message': 'Invalid phone format. Use digits, optional +, 7–15 digits.'}), 400
+    
+    if email:
+        if not re.fullmatch(r'^[^\s@]+@[^\s@]+\.[^\s@]+$', email):
+            return jsonify({'message': 'Invalid email format.'}), 400
+
     connection = create_db_connection()
     if not connection:
         return jsonify({'message': 'Database connection failed'}), 500
@@ -58,10 +73,9 @@ def add_owner():
     try:
         cursor = connection.cursor()
         sql_owner = "INSERT INTO Owner (FirstName, LastName, Phone, Address) VALUES (%s, %s, %s, %s)"
-        cursor.execute(sql_owner, (data.get('firstName'), data.get('lastName'), data.get('phone'), data.get('address')))
+        cursor.execute(sql_owner, (data.get('firstName'), data.get('lastName'), phone, data.get('address')))
         owner_id = cursor.lastrowid
         # optional email
-        email = data.get('email')
         if email:
             sql_email = "INSERT INTO Owner_Email (OwnerID, Email) VALUES (%s, %s)"
             cursor.execute(sql_email, (owner_id, email))
@@ -305,6 +319,41 @@ def process_payment(app_id, bill_id):
     cursor.close()
     connection.close()
     return jsonify({'message': 'Payment processed successfully!'})
+
+# New endpoint: pet history using stored procedure GetPetHistory
+@app.route('/api/pet-history/<int:pet_id>', methods=['GET'])
+def get_pet_history(pet_id):
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'message': 'Database connection failed'}), 500
+    cursor = None
+    try:
+        cursor = connection.cursor(dictionary=True)
+        # Use callproc and collect stored_results
+        cursor.callproc('GetPetHistory', [pet_id])
+        rows = []
+        for result in cursor.stored_results():
+            rows.extend(result.fetchall())
+        # Normalize date fields to ISO strings where applicable
+        for r in rows:
+            if r.get('DoB') and isinstance(r['DoB'], (datetime.date, datetime.datetime)):
+                r['DoB'] = r['DoB'].isoformat()
+            if r.get('AppointmentDate') and isinstance(r['AppointmentDate'], (datetime.date, datetime.datetime)):
+                r['AppointmentDate'] = r['AppointmentDate'].isoformat()
+        return jsonify(rows)
+    except Error as e:
+        return jsonify({'message': f'Failed to retrieve pet history: {e}'}), 500
+    finally:
+        try:
+            if cursor:
+                cursor.close()
+        except Exception:
+            pass
+        try:
+            if connection and connection.is_connected():
+                connection.close()
+        except Exception:
+            pass
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

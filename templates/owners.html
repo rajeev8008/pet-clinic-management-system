@@ -64,4 +64,22 @@
         <button type="button" class="close-modal-btn">Close</button>
     </form>
 </dialog>
+
+<dialog id="pet-history-modal">
+    <div id="pet-history-content">
+        <h3>Pet History</h3>
+        <div id="pet-info"></div>
+        <hr>
+        <div id="pet-appointments">
+            <h4>Appointments</h4>
+            <table id="pet-history-table" style="width:100%;">
+                <thead><tr><th>Date</th><th>Reason</th><th>Vet</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div style="margin-top:0.75rem;text-align:right">
+            <button type="button" onclick="document.getElementById('pet-history-modal').close()">Close</button>
+        </div>
+    </div>
+</dialog>
 {% endblock %}
