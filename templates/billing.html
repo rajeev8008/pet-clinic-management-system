@@ -2,10 +2,61 @@
 {% block content %}
 <section id="billing-management">
     <h2> Billing & Payments</h2>
-    <h3>All Bills</h3>
-    <table id="billing-table">
-        <thead><tr><th>Bill ID</th><th>Date</th><th>Client</th><th>Pet</th><th>Amount</th><th>Status</th><th>Payment Mode</th><th>Actions</th></tr></thead>
-        <tbody></tbody>
-    </table>
+    
+    <div class="billing-stats">
+        <div class="stat-card">
+            <h4>Total Bills</h4>
+            <p id="stat-total-bills" class="stat-number">0</p>
+        </div>
+        <div class="stat-card">
+            <h4>Paid</h4>
+            <p id="stat-paid-bills" class="stat-number" style="color: #43A047;">0</p>
+        </div>
+        <div class="stat-card">
+            <h4>Pending</h4>
+            <p id="stat-unpaid-bills" class="stat-number" style="color: #E53935;">0</p>
+        </div>
+    </div>
+    
+    <h3>Outstanding Bills</h3>
+    <p class="section-hint">Manage and track all billing records for appointments</p>
+    
+    <div class="table-wrapper">
+        <table id="billing-table">
+            <thead><tr><th>Bill ID</th><th>Date</th><th>Client Name</th><th>Pet Name</th><th>Amount</th><th>Status</th><th>Payment Mode</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
 </section>
+
+<dialog id="process-payment-modal">
+    <form id="process-payment-form">
+        <h3>Process Payment</h3>
+        <input type="hidden" id="payment-app-id">
+        <input type="hidden" id="payment-bill-id">
+        
+        <div class="payment-info">
+            <p><strong>Bill ID:</strong> <span id="payment-bill-display"></span></p>
+            <p><strong>Amount:</strong> <span id="payment-amount-display"></span></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="payment-mode">Select Payment Method:</label>
+            <select id="payment-mode" required>
+                <option value="">-- Choose Payment Mode --</option>
+                <option value="Cash">💵 Cash</option>
+                <option value="Card">💳 Credit/Debit Card</option>
+                <option value="Check">📝 Check</option>
+                <option value="Online Transfer">🔗 Online Transfer</option>
+                <option value="UPI">📱 UPI</option>
+            </select>
+            <div id="error-payment-mode" class="field-error"></div>
+        </div>
+        
+        <div class="button-group">
+            <button type="submit" class="btn-primary">Confirm Payment</button>
+            <button type="button" class="close-modal-btn">Cancel</button>
+        </div>
+    </form>
+</dialog>
 {% endblock %}
