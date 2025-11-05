@@ -100,10 +100,31 @@ document.addEventListener('DOMContentLoaded', function() {
         apptOwnerSelect.addEventListener('change', async (e) => {
             const ownerId = e.target.value;
             apptPetSelect.innerHTML = '<option value="">-- Select Pet --</option>';
+            apptVetSelect.innerHTML = '<option value="">-- Select Veterinarian --</option>';
             if (ownerId) {
                 const response = await fetch(`${API_BASE_URL}/owners/${ownerId}/pets`);
                 const pets = await response.json();
                 pets.forEach(pet => apptPetSelect.innerHTML += `<option value="${pet.PetID}">${pet.Name}</option>`);
+            }
+        });
+
+        apptPetSelect.addEventListener('change', async (e) => {
+            const petId = e.target.value;
+            apptVetSelect.innerHTML = '<option value="">-- Select Veterinarian --</option>';
+            if (petId) {
+                const response = await fetch(`${API_BASE_URL}/pets/${petId}/vets`);
+                const vets = await response.json();
+                let primaryVetId = null;
+                vets.forEach(vet => {
+                    apptVetSelect.innerHTML += `<option value="${vet.VetID}">${vet.Name}</option>`;
+                    if (vet.is_primary_vet) {
+                        primaryVetId = vet.VetID;
+                    }
+                });
+                // Auto-select primary vet if exists
+                if (primaryVetId) {
+                    apptVetSelect.value = primaryVetId;
+                }
             }
         });
 
@@ -183,7 +204,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${owner.FirstName} ${owner.LastName}</td>
                     <td>${owner.Phone}</td>
                     <td>${owner.Address}</td>
-                    <td><button class="action-button" data-owner-id="${owner.OwnerID}" data-owner-name="${owner.FirstName} ${owner.LastName}">Add Pet</button></td>
+                    <td>
+                      <button class="action-button edit-owner" data-owner-id="${owner.OwnerID}">Edit</button>
+                      <button class="action-button delete-owner" data-owner-id="${owner.OwnerID}">Delete</button>
+                      <button class="action-button add-pet" data-owner-id="${owner.OwnerID}" data-owner-name="${owner.FirstName} ${owner.LastName}">Add Pet</button>
+                    </td>
                 `;
                 ownerTableBody.appendChild(row);
             });
@@ -209,7 +234,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${pet.Age}</td>
                     <td>
                       <button class="action-button view-history" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">View History</button>
-                      <button class="action-button" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button>
+                      <button class="action-button manage-vets" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button>
+                      <button class="action-button edit-pet" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Edit</button>
+                      <button class="action-button delete-pet" data-pet-id="${pet.PetID}">Delete</button>
                     </td>
                 `;
                 petTableBody.appendChild(row);
@@ -292,12 +319,106 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+
+        // Edit Owner Form Handler
+        const editOwnerModal = document.getElementById('edit-owner-modal');
+        const editOwnerForm = document.getElementById('edit-owner-form');
+        if (editOwnerForm) {
+            editOwnerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearFieldErrors(editOwnerForm);
+                const ownerId = document.getElementById('edit-owner-id').value;
+                const phone = document.getElementById('edit-owner-phone').value;
+                
+                if (!validatePhone(phone)) {
+                    showFieldError('edit-owner-phone', 'Invalid phone format (7–15 digits, optional +)');
+                    return;
+                }
+                
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/owners/${ownerId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: phone })
+                });
+                hideLoading();
+                if (response.ok) {
+                    showGlobalMessage('Owner updated successfully!', 'success');
+                    editOwnerForm.reset();
+                    editOwnerModal.close();
+                    fetchAndRenderOwners();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to update owner.', 'error');
+                }
+            });
+        }
+
+        // Edit Pet Form Handler
+        const editPetModal = document.getElementById('edit-pet-modal');
+        const editPetForm = document.getElementById('edit-pet-form');
+        if (editPetForm) {
+            editPetForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const petId = document.getElementById('edit-pet-id').value;
+                const breed = document.getElementById('edit-pet-breed').value;
+                
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/pets/${petId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ breed: breed })
+                });
+                hideLoading();
+                if (response.ok) {
+                    showGlobalMessage('Pet updated successfully!', 'success');
+                    editPetForm.reset();
+                    editPetModal.close();
+                    const ownerId = document.querySelector('#owner-table tr.selected')?.dataset.ownerId;
+                    if (ownerId) showPetsForOwner(ownerId, document.getElementById('selected-owner-name').textContent);
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to update pet.', 'error');
+                }
+            });
+        }
         
         fetchAndRenderOwners();
     }
 
     function initializeBillingPage() {
         const billingTableBody = document.querySelector('#billing-table tbody');
+        const processPaymentModal = document.getElementById('process-payment-modal');
+        const processPaymentForm = document.getElementById('process-payment-form');
+        
+        // Load and display billing statistics
+        async function fetchAndRenderStats() {
+            try {
+                // Fetch all bills to calculate stats
+                const billsResponse = await fetch(`${API_BASE_URL}/billing`);
+                const bills = await billsResponse.json();
+                
+                let totalBills = 0;
+                let paidCount = 0;
+                let unpaidCount = 0;
+                
+                bills.forEach(bill => {
+                    totalBills++;
+                    if (bill.Status === 'Paid') {
+                        paidCount++;
+                    } else if (bill.Status === 'Unpaid') {
+                        unpaidCount++;
+                    }
+                });
+                
+                // Update stat cards
+                document.getElementById('stat-total-bills').textContent = totalBills;
+                document.getElementById('stat-paid-bills').textContent = paidCount;
+                document.getElementById('stat-unpaid-bills').textContent = unpaidCount;
+            } catch (err) {
+                console.error('Failed to load billing stats:', err);
+            }
+        }
         
         async function fetchAndRenderBills() {
             const response = await fetch(`${API_BASE_URL}/billing`);
@@ -307,14 +428,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = document.createElement('tr');
                 let actionButton = '';
                 if (bill.Status === 'Unpaid') {
-                    actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}">Process Payment</button>`;
+                    actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}" data-amount="${bill.Amount}">Process Payment</button>`;
                 }
                 row.innerHTML = `
                     <td>${bill.BillID}</td>
                     <td>${new Date(bill.Date).toLocaleDateString()}</td>
                     <td>${bill.FirstName} ${bill.LastName}</td>
                     <td>${bill.PetName}</td>
-                    <td>$${Number(bill.Amount).toFixed(2)}</td>
+                    <td>₹${Number(bill.Amount).toFixed(2)}</td>
                     <td>${bill.Status}</td>
                     <td>${bill.Mode || 'N/A'}</td>
                     <td>${actionButton}</td>
@@ -323,31 +444,60 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
         
+        // Load stats and bills
+        fetchAndRenderStats();
         fetchAndRenderBills();
 
         billingTableBody.addEventListener('click', async (e) => {
             if (e.target.matches('.action-button[data-bill-id]')) {
                 const appId = e.target.dataset.appId;
                 const billId = e.target.dataset.billId;
-                const mode = prompt("Enter payment mode (e.g., Cash, Card):");
-                if (mode) {
-                    showLoading();
-                    const response = await fetch(`${API_BASE_URL}/billing/${appId}/${billId}/pay`, { 
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ mode: mode })
-                    });
-                    hideLoading();
-                    if (response.ok) {
-                        showGlobalMessage('Payment processed!', 'success');
-                        fetchAndRenderBills(); // Refresh the list
-                    } else {
-                        const err = await response.json().catch(() => ({}));
-                        showGlobalMessage(err.message || 'Failed to process payment.', 'error');
-                    }
-                }
+                const amount = e.target.dataset.amount;
+                
+                // Populate payment modal with bill details
+                document.getElementById('payment-app-id').value = appId;
+                document.getElementById('payment-bill-id').value = billId;
+                document.getElementById('payment-bill-display').textContent = billId;
+                document.getElementById('payment-amount-display').textContent = '₹' + Number(amount).toFixed(2);
+                document.getElementById('payment-mode').value = '';
+                clearFieldErrors(processPaymentForm);
+                processPaymentModal.showModal();
             }
         });
+
+        if (processPaymentForm) {
+            processPaymentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearFieldErrors(processPaymentForm);
+                
+                const appId = document.getElementById('payment-app-id').value;
+                const billId = document.getElementById('payment-bill-id').value;
+                const mode = document.getElementById('payment-mode').value;
+                
+                if (!mode) {
+                    showFieldError('payment-mode', 'Please select a payment mode');
+                    return;
+                }
+                
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/billing/${appId}/${billId}/pay`, { 
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: mode })
+                });
+                hideLoading();
+                if (response.ok) {
+                    showGlobalMessage('Payment processed successfully!', 'success');
+                    processPaymentForm.reset();
+                    processPaymentModal.close();
+                    fetchAndRenderBills();
+                    fetchAndRenderStats();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to process payment.', 'error');
+                }
+            });
+        }
     }
 
     // --- Global Event Listeners ---
@@ -395,14 +545,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         // Open "Add Pet" Modal
-        if (e.target.matches('.action-button[data-owner-id]')) {
+        if (e.target.matches('.action-button.add-pet')) {
             const addPetModal = document.getElementById('add-pet-modal');
             document.getElementById('pet-owner-id').value = e.target.dataset.ownerId;
             document.getElementById('pet-owner-name').textContent = e.target.dataset.ownerName;
             addPetModal.showModal();
         }
         // Open "Manage Vets" Modal
-        if (e.target.matches('#pet-table .action-button[data-pet-id]')) {
+        if (e.target.matches('.action-button.manage-vets')) {
             const petId = e.target.dataset.petId;
             const petName = e.target.dataset.petName;
             const vetSelect = document.getElementById('vet-select');
@@ -445,6 +595,66 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('complete-appt-id').value = e.target.dataset.apptId;
             document.getElementById('visit-appt-id').textContent = e.target.dataset.apptId;
             completeVisitModal.showModal();
+        }
+        // Delete Owner
+        if (e.target.matches('.action-button.delete-owner')) {
+            const ownerId = e.target.dataset.ownerId;
+            showGlobalMessage('Deleting owner and all associated data...', 'success', 0); // No auto-hide
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/owners/${ownerId}`, { method: 'DELETE' });
+            hideLoading();
+            if (response.ok) {
+                showGlobalMessage('Owner deleted successfully!', 'success');
+                const ownerId = document.querySelector('#owner-table tr.selected')?.dataset.ownerId;
+                const ownerTableBody = document.querySelector('#owner-table tbody');
+                if (ownerTableBody) {
+                    document.querySelectorAll('#owner-table tbody tr').forEach(row => {
+                        if (row.dataset.ownerId == ownerId) {
+                            row.remove();
+                        }
+                    });
+                }
+                fetchAndRenderOwners();
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showGlobalMessage(err.message || 'Failed to delete owner.', 'error');
+            }
+        }
+        // Delete Pet
+        if (e.target.matches('.action-button.delete-pet')) {
+            const petId = e.target.dataset.petId;
+            showGlobalMessage('Deleting pet...', 'success', 0); // No auto-hide
+            showLoading();
+            const response = await fetch(`${API_BASE_URL}/pets/${petId}`, { method: 'DELETE' });
+            hideLoading();
+            if (response.ok) {
+                showGlobalMessage('Pet deleted successfully!', 'success');
+                const ownerId = document.querySelector('#owner-table tr.selected')?.dataset.ownerId;
+                if (ownerId) showPetsForOwner(ownerId, document.getElementById('selected-owner-name').textContent);
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showGlobalMessage(err.message || 'Failed to delete pet.', 'error');
+            }
+        }
+        // Edit Owner
+        if (e.target.matches('.action-button.edit-owner')) {
+            const ownerId = e.target.dataset.ownerId;
+            const row = e.target.closest('tr');
+            const phone = row.querySelector('td:nth-child(2)').textContent;
+            
+            document.getElementById('edit-owner-id').value = ownerId;
+            document.getElementById('edit-owner-phone').value = phone;
+            document.getElementById('edit-owner-modal').showModal();
+        }
+        // Edit Pet
+        if (e.target.matches('.action-button.edit-pet')) {
+            const petId = e.target.dataset.petId;
+            const row = e.target.closest('tr');
+            const breed = row.querySelector('td:nth-child(3)').textContent;
+            
+            document.getElementById('edit-pet-id').value = petId;
+            document.getElementById('edit-pet-breed').value = breed;
+            document.getElementById('edit-pet-modal').showModal();
         }
         // Close any modal
         if (e.target.matches('.close-modal-btn')) {
