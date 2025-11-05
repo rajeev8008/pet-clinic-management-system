@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pet Clinic Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Pet Clinic Management System</h1>
+        <nav>
+            <a href="{{ url_for('schedule_page') }}">Schedule</a>
+            <a href="{{ url_for('owners_page') }}">Owners & Pets</a>
+            <a href="{{ url_for('billing_page') }}">Billing</a>
+        </nav>
+    </header>
+    <main class="container">
+        <!-- Global message area (success/error) -->
+        <div id="global-message" class="hidden" role="status" aria-live="polite"></div>
+        {% block content %}{% endblock %}
+    </main>
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="hidden" aria-hidden="true">
+        <div class="spinner" role="status" aria-hidden="false"></div>
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

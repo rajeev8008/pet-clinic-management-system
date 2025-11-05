@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+{% block content %}
+<section id="owner-management">
+    <h2> Owner & Pet Management</h2>
+    <form id="add-owner-form">
+        <h3>Register New Owner</h3>
+        <input type="text" id="firstName" placeholder="First Name" required>
+        <div id="error-firstName" class="field-error"></div>
+        <input type="text" id="lastName" placeholder="Last Name" required>
+        <div id="error-lastName" class="field-error"></div>
+        <input type="tel" id="phone" placeholder="Phone" required>
+        <div id="error-phone" class="field-error"></div>
+        <input type="email" id="email" placeholder="Email">
+        <div id="error-email" class="field-error"></div>
+        <input type="text" id="address" placeholder="Address">
+        <div id="error-address" class="field-error"></div>
+        <button type="submit">Add Owner</button>
+    </form>
+    <hr>
+    <div id="owner-list-container">
+        <h3>Client List (Click a client to view their pets)</h3>
+        <table id="owner-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div id="pet-details-container" class="hidden">
+        <h3>Pets for <span id="selected-owner-name"></span></h3>
+        <table id="pet-table">
+            <thead><tr><th>Name</th><th>Species</th><th>Breed</th><th>DoB</th><th>Age</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
+    </div>
+</section>
+
+<dialog id="add-pet-modal">
+    <form id="add-pet-form">
+        <h3>Register New Pet for <span id="pet-owner-name"></span></h3>
+        <input type="hidden" id="pet-owner-id">
+        <input type="text" id="pet-name" placeholder="Pet Name" required>
+        <input type="text" id="pet-species" placeholder="Species (e.g., Dog)" required>
+        <input type="text" id="pet-breed" placeholder="Breed" required>
+        <label for="pet-dob">Date of Birth:</label>
+        <input type="date" id="pet-dob" required>
+        <button type="submit">Save Pet</button>
+        <button type="button" class="close-modal-btn">Cancel</button>
+    </form>
+</dialog>
+
+<dialog id="manage-vets-modal">
+    <h3>Manage Vets for <span id="manage-pet-name"></span></h3>
+    <div id="assigned-vets-list"></div>
+    <form id="manage-vets-form">
+        <h4>Assign New Veterinarian</h4>
+        <input type="hidden" id="manage-pet-id">
+        <label for="vet-select">Select a Veterinarian:</label>
+        <select id="vet-select" required></select>
+        <label>
+            <input type="checkbox" id="is-primary-vet-checkbox">
+            Set as Primary Vet
+        </label>
+        <button type="submit">Assign Vet</button>
+        <button type="button" class="close-modal-btn">Close</button>
+    </form>
+</dialog>
+
+<dialog id="pet-history-modal">
+    <div id="pet-history-content">
+        <h3>Pet History</h3>
+        <div id="pet-info"></div>
+        <hr>
+        <div id="pet-appointments">
+            <h4>Appointments</h4>
+            <table id="pet-history-table" style="width:100%;">
+                <thead><tr><th>Date</th><th>Reason</th><th>Vet</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        <div style="margin-top:0.75rem;text-align:right">
+            <button type="button" onclick="document.getElementById('pet-history-modal').close()">Close</button>
+        </div>
+    </div>
+</dialog>
+{% endblock %}
