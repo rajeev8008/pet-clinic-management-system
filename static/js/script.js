@@ -58,23 +58,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const apptPetSelect = document.getElementById('appt-pet-select');
         const apptVetSelect = document.getElementById('appt-vet-select');
         const completeVisitModal = document.getElementById('complete-visit-modal');
-        const removeApptModal = document.getElementById('remove-appointment-modal');
-        const appointmentsToggle = document.getElementById('appointments-toggle');
-        const appointmentsContent = document.getElementById('appointments-content');
-        const apptCount = document.getElementById('appt-count');
         
         async function fetchAndRenderAppointments() {
             const response = await fetch(`${API_BASE_URL}/appointments`);
             const appointments = await response.json();
-            apptCount.textContent = `(${appointments.length})`;
             scheduleTableBody.innerHTML = '';
             appointments.forEach(appt => {
                 const row = document.createElement('tr');
                 let actions = '';
                 if (appt.Status === 'Scheduled') {
                     actions = `<button class="action-button complete" data-appt-id="${appt.AppID}">Complete Visit</button>`;
-                } else if (appt.Status === 'Completed') {
-                    actions = `<button class="action-button remove" data-appt-id="${appt.AppID}">Remove</button>`;
                 }
                 row.innerHTML = `
                     <td>${new Date(appt.Date).toLocaleDateString()} ${appt.Time}</td>
@@ -107,31 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
         apptOwnerSelect.addEventListener('change', async (e) => {
             const ownerId = e.target.value;
             apptPetSelect.innerHTML = '<option value="">-- Select Pet --</option>';
-            apptVetSelect.innerHTML = '<option value="">-- Select Veterinarian --</option>';
             if (ownerId) {
                 const response = await fetch(`${API_BASE_URL}/owners/${ownerId}/pets`);
                 const pets = await response.json();
                 pets.forEach(pet => apptPetSelect.innerHTML += `<option value="${pet.PetID}">${pet.Name}</option>`);
-            }
-        });
-
-        apptPetSelect.addEventListener('change', async (e) => {
-            const petId = e.target.value;
-            apptVetSelect.innerHTML = '<option value="">-- Select Veterinarian --</option>';
-            if (petId) {
-                const response = await fetch(`${API_BASE_URL}/pets/${petId}/vets`);
-                const vets = await response.json();
-                let primaryVetId = null;
-                vets.forEach(vet => {
-                    apptVetSelect.innerHTML += `<option value="${vet.VetID}">${vet.Name}</option>`;
-                    if (vet.is_primary_vet) {
-                        primaryVetId = vet.VetID;
-                    }
-                });
-                // Auto-select primary vet if exists
-                if (primaryVetId) {
-                    apptVetSelect.value = primaryVetId;
-                }
             }
         });
 
@@ -185,116 +157,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        // Remove Appointment Modal Handler
-        if(removeApptModal) {
-            const removeApptForm = document.getElementById('remove-appointment-form');
-            removeApptForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const appId = document.getElementById('remove-appt-id-hidden').value;
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/appointments/${appId}`, { method: 'DELETE' });
-                hideLoading();
-                if (response.ok) {
-                    showGlobalMessage('Appointment removed successfully!', 'success');
-                    removeApptForm.reset();
-                    removeApptModal.close();
-                    fetchAndRenderAppointments();
-                } else {
-                    const error = await response.json().catch(() => ({}));
-                    showGlobalMessage(error.message || 'Failed to remove appointment', 'error');
-                }
-            });
-        }
-
-        // Collapsible Toggle Handler
-        if(appointmentsToggle) {
-            appointmentsToggle.addEventListener('click', () => {
-                appointmentsToggle.classList.toggle('collapsed');
-                appointmentsContent.classList.toggle('collapsed');
-            });
-        }
-
-        // --- FILTER FUNCTIONALITY FOR APPOINTMENTS ---
-        // Store all appointments for filtering
-        let allAppointments = [];
-        const originalFetchAndRenderAppointments = fetchAndRenderAppointments;
-        fetchAndRenderAppointments = async function() {
-            const response = await fetch(`${API_BASE_URL}/appointments`);
-            allAppointments = await response.json();
-            apptCount.textContent = `(${allAppointments.length})`;
-            scheduleTableBody.innerHTML = '';
-            allAppointments.forEach(appt => renderAppointmentRow(appt));
-        };
-
-        function renderAppointmentRow(appt) {
-            const row = document.createElement('tr');
-            let actions = '';
-            if (appt.Status === 'Scheduled') {
-                actions = `<button class="action-button complete" data-appt-id="${appt.AppID}">Complete Visit</button>`;
-            } else if (appt.Status === 'Completed') {
-                actions = `<button class="action-button remove" data-appt-id="${appt.AppID}">Remove</button>`;
-            }
-            row.innerHTML = `
-                <td>${new Date(appt.Date).toLocaleDateString()} ${appt.Time}</td>
-                <td>${appt.PetName}</td>
-                <td>${appt.FirstName} ${appt.LastName}</td>
-                <td>${appt.VetName}</td>
-                <td>${appt.Reason}</td>
-                <td>${appt.Status}</td>
-                <td>${actions}</td>
-            `;
-            row.dataset.date = appt.Date;
-            row.dataset.status = appt.Status;
-            scheduleTableBody.appendChild(row);
-        }
-
-        const apptDateFilter = document.getElementById('appt-date-filter');
-        const apptStatusFilter = document.getElementById('appt-status-filter');
-
-        function applyAppointmentFilters() {
-            const selectedDate = apptDateFilter ? apptDateFilter.value : '';
-            const selectedStatus = apptStatusFilter ? apptStatusFilter.value : '';
-            
-            const rows = scheduleTableBody.querySelectorAll('tr');
-            let visibleCount = 0;
-            
-            rows.forEach(row => {
-                let showRow = true;
-                
-                if (selectedDate) {
-                    const rowDate = row.dataset.date.split('T')[0];
-                    const filterDate = selectedDate;
-                    showRow = showRow && (rowDate === filterDate);
-                }
-                
-                if (selectedStatus) {
-                    showRow = showRow && (row.dataset.status === selectedStatus);
-                }
-                
-                row.style.display = showRow ? '' : 'none';
-                if (showRow) visibleCount++;
-            });
-            
-            apptCount.textContent = `(${visibleCount})`;
-        }
-
-        if (apptDateFilter) {
-            apptDateFilter.addEventListener('change', applyAppointmentFilters);
-        }
-        if (apptStatusFilter) {
-            apptStatusFilter.addEventListener('change', applyAppointmentFilters);
-        }
-
-        // Event delegation for Remove button
-        scheduleTableBody.addEventListener('click', (e) => {
-            if (e.target.classList.contains('remove')) {
-                const appId = e.target.dataset.apptId;
-                removeApptModal.showModal();
-                document.getElementById('remove-appt-id').textContent = appId;
-                document.getElementById('remove-appt-id-hidden').value = appId;
-            }
-        });
-
         populateAppointmentDropdowns();
         fetchAndRenderAppointments();
     }
@@ -321,11 +183,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${owner.FirstName} ${owner.LastName}</td>
                     <td>${owner.Phone}</td>
                     <td>${owner.Address}</td>
-                    <td>
-                      <button class="action-button edit-owner" data-owner-id="${owner.OwnerID}">Edit</button>
-                      <button class="action-button delete-owner" data-owner-id="${owner.OwnerID}">Delete</button>
-                      <button class="action-button add-pet" data-owner-id="${owner.OwnerID}" data-owner-name="${owner.FirstName} ${owner.LastName}">Add Pet</button>
-                    </td>
+                    <td><button class="action-button" data-owner-id="${owner.OwnerID}" data-owner-name="${owner.FirstName} ${owner.LastName}">Add Pet</button></td>
                 `;
                 ownerTableBody.appendChild(row);
             });
@@ -351,9 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${pet.Age}</td>
                     <td>
                       <button class="action-button view-history" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">View History</button>
-                      <button class="action-button manage-vets" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button>
-                      <button class="action-button edit-pet" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Edit</button>
-                      <button class="action-button delete-pet" data-pet-id="${pet.PetID}">Delete</button>
+                      <button class="action-button" data-pet-id="${pet.PetID}" data-pet-name="${pet.Name}">Manage Vets</button>
                     </td>
                 `;
                 petTableBody.appendChild(row);
@@ -436,204 +292,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-
-        // Edit Owner Form Handler
-        const editOwnerModal = document.getElementById('edit-owner-modal');
-        const editOwnerForm = document.getElementById('edit-owner-form');
-        if (editOwnerForm) {
-            editOwnerForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                clearFieldErrors(editOwnerForm);
-                const ownerId = document.getElementById('edit-owner-id').value;
-                const phone = document.getElementById('edit-owner-phone').value;
-                
-                if (!validatePhone(phone)) {
-                    showFieldError('edit-owner-phone', 'Invalid phone format (7–15 digits, optional +)');
-                    return;
-                }
-                
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/owners/${ownerId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phone })
-                });
-                hideLoading();
-                if (response.ok) {
-                    showGlobalMessage('Owner updated successfully!', 'success');
-                    editOwnerForm.reset();
-                    editOwnerModal.close();
-                    fetchAndRenderOwners();
-                } else {
-                    const err = await response.json().catch(() => ({}));
-                    showGlobalMessage(err.message || 'Failed to update owner.', 'error');
-                }
-            });
-        }
-
-        // Edit Pet Form Handler
-        const editPetModal = document.getElementById('edit-pet-modal');
-        const editPetForm = document.getElementById('edit-pet-form');
-        if (editPetForm) {
-            editPetForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const petId = document.getElementById('edit-pet-id').value;
-                const breed = document.getElementById('edit-pet-breed').value;
-                
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/pets/${petId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ breed: breed })
-                });
-                hideLoading();
-                if (response.ok) {
-                    showGlobalMessage('Pet updated successfully!', 'success');
-                    editPetForm.reset();
-                    editPetModal.close();
-                    const ownerId = document.querySelector('#owner-table tr.selected')?.dataset.ownerId;
-                    if (ownerId) showPetsForOwner(ownerId, document.getElementById('selected-owner-name').textContent);
-                } else {
-                    const err = await response.json().catch(() => ({}));
-                    showGlobalMessage(err.message || 'Failed to update pet.', 'error');
-                }
-            });
-        }
-        
-        // Collapsible Toggle Handlers for Owner Page
-        const clientsToggle = document.getElementById('clients-toggle');
-        const clientsContent = document.getElementById('clients-content');
-        const clientCount = document.getElementById('client-count');
-        const petsToggle = document.getElementById('pets-toggle');
-        const petsContent = document.getElementById('pets-content');
-        const petCount = document.getElementById('pet-count');
-
-        if(clientsToggle) {
-            clientsToggle.addEventListener('click', () => {
-                clientsToggle.classList.toggle('collapsed');
-                clientsContent.classList.toggle('collapsed');
-            });
-            // Update client count
-            ownerTableBody.addEventListener('change', () => {
-                clientCount.textContent = `(${ownerTableBody.querySelectorAll('tr').length})`;
-            });
-        }
-
-        if(petsToggle) {
-            petsToggle.addEventListener('click', () => {
-                petsToggle.classList.toggle('collapsed');
-                petsContent.classList.toggle('collapsed');
-            });
-            // Update pet count
-            petTableBody.addEventListener('change', () => {
-                petCount.textContent = `(${petTableBody.querySelectorAll('tr').length})`;
-            });
-        }
-
-        // Update counts when data is rendered
-        function updateCounts() {
-            clientCount.textContent = `(${ownerTableBody.querySelectorAll('tr').length})`;
-            petCount.textContent = `(${petTableBody.querySelectorAll('tr').length})`;
-        }
-
-        // --- FILTER FUNCTIONALITY ---
-        // Search owners by name or phone
-        const ownerSearchInput = document.getElementById('owner-search-input');
-        if (ownerSearchInput) {
-            ownerSearchInput.addEventListener('input', (e) => {
-                const searchTerm = e.target.value.toLowerCase();
-                const rows = ownerTableBody.querySelectorAll('tr');
-                let visibleCount = 0;
-                rows.forEach(row => {
-                    const name = row.cells[0].textContent.toLowerCase();
-                    const phone = row.cells[1].textContent.toLowerCase();
-                    const matches = name.includes(searchTerm) || phone.includes(searchTerm);
-                    row.style.display = matches ? '' : 'none';
-                    if (matches) visibleCount++;
-                });
-                clientCount.textContent = `(${visibleCount})`;
-            });
-        }
-
-        // Filter pets by species
-        const petSpeciesFilter = document.getElementById('pet-species-filter');
-        if (petSpeciesFilter) {
-            petSpeciesFilter.addEventListener('change', (e) => {
-                const filterSpecies = e.target.value.toLowerCase();
-                const rows = petTableBody.querySelectorAll('tr');
-                let visibleCount = 0;
-                rows.forEach(row => {
-                    const species = row.cells[1].textContent.toLowerCase();
-                    const matches = !filterSpecies || species.includes(filterSpecies);
-                    row.style.display = matches ? '' : 'none';
-                    if (matches) visibleCount++;
-                });
-                petCount.textContent = `(${visibleCount})`;
-            });
-        }
-
-        // Hook into existing render functions
-        const originalFetchAndRenderOwners = fetchAndRenderOwners;
-        fetchAndRenderOwners = async function() {
-            await originalFetchAndRenderOwners();
-            updateCounts();
-        };
         
         fetchAndRenderOwners();
     }
 
     function initializeBillingPage() {
         const billingTableBody = document.querySelector('#billing-table tbody');
-        const processPaymentModal = document.getElementById('process-payment-modal');
-        const processPaymentForm = document.getElementById('process-payment-form');
-        const billsToggle = document.getElementById('bills-toggle');
-        const billsContent = document.getElementById('bills-content');
-        const billsCount = document.getElementById('bills-count');
-        
-        // Store all bills for filtering
-        let allBills = [];
-        
-        // Load and display billing statistics
-        async function fetchAndRenderStats() {
-            try {
-                // Fetch all bills to calculate stats
-                const billsResponse = await fetch(`${API_BASE_URL}/billing`);
-                allBills = await billsResponse.json();
-                
-                let totalBills = 0;
-                let paidCount = 0;
-                let unpaidCount = 0;
-                
-                allBills.forEach(bill => {
-                    totalBills++;
-                    if (bill.Status === 'Paid') {
-                        paidCount++;
-                    } else if (bill.Status === 'Unpaid') {
-                        unpaidCount++;
-                    }
-                });
-                
-                // Update stat cards
-                document.getElementById('stat-total-bills').textContent = totalBills;
-                document.getElementById('stat-paid-bills').textContent = paidCount;
-                document.getElementById('stat-unpaid-bills').textContent = unpaidCount;
-                
-                // Update bills count
-                if(billsCount) {
-                    billsCount.textContent = `(${totalBills})`;
-                }
-            } catch (err) {
-                console.error('Failed to load billing stats:', err);
-            }
-        }
         
         async function fetchAndRenderBills() {
             const response = await fetch(`${API_BASE_URL}/billing`);
-            allBills = await response.json();
-            renderBillsTable(allBills);
-        }
-
-        function renderBillsTable(bills) {
+            const bills = await response.json();
             billingTableBody.innerHTML = '';
             bills.forEach(bill => {
                 const row = document.createElement('tr');
@@ -648,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${new Date(bill.Date).toLocaleDateString()}</td>
                     <td>${bill.FirstName} ${bill.LastName}</td>
                     <td>${bill.PetName}</td>
-                    <td>₹${Number(bill.Amount).toFixed(2)}</td>
+                    <td>$${Number(bill.Amount).toFixed(2)}</td>
                     <td>${bill.Status}</td>
                     <td>${bill.Mode || 'N/A'}</td>
                     <td>${actionButton}</td>
@@ -657,51 +325,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.dataset.billId = bill.BillID;
                 billingTableBody.appendChild(row);
             });
-            
-            // Update count
-            if(billsCount) {
-                billsCount.textContent = `(${bills.length})`;
-            }
         }
         
-        // Collapsible Toggle Handler for Bills
-        if(billsToggle) {
-            billsToggle.addEventListener('click', () => {
-                billsToggle.classList.toggle('collapsed');
-                billsContent.classList.toggle('collapsed');
-            });
-        }
-
-        // --- FILTER FUNCTIONALITY FOR BILLS ---
-        const billStatusFilter = document.getElementById('bill-status-filter');
-        if (billStatusFilter) {
-            billStatusFilter.addEventListener('change', (e) => {
-                const selectedStatus = e.target.value;
-                const filteredBills = selectedStatus 
-                    ? allBills.filter(bill => bill.Status === selectedStatus)
-                    : allBills;
-                renderBillsTable(filteredBills);
-            });
-        }
-        
-        // Load stats and bills
-        fetchAndRenderStats();
         fetchAndRenderBills();
 
         billingTableBody.addEventListener('click', async (e) => {
             if (e.target.matches('.action-button[data-bill-id]:not(.delete-bill)')) {
                 const appId = e.target.dataset.appId;
                 const billId = e.target.dataset.billId;
-                const amount = e.target.dataset.amount;
-                
-                // Populate payment modal with bill details
-                document.getElementById('payment-app-id').value = appId;
-                document.getElementById('payment-bill-id').value = billId;
-                document.getElementById('payment-bill-display').textContent = billId;
-                document.getElementById('payment-amount-display').textContent = '₹' + Number(amount).toFixed(2);
-                document.getElementById('payment-mode').value = '';
-                clearFieldErrors(processPaymentForm);
-                processPaymentModal.showModal();
+                const mode = prompt("Enter payment mode (e.g., Cash, Card):");
+                if (mode) {
+                    showLoading();
+                    const response = await fetch(`${API_BASE_URL}/billing/${appId}/${billId}/pay`, { 
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode: mode })
+                    });
+                    hideLoading();
+                    if (response.ok) {
+                        showGlobalMessage('Payment processed!', 'success');
+                        fetchAndRenderBills(); // Refresh the list
+                    } else {
+                        const err = await response.json().catch(() => ({}));
+                        showGlobalMessage(err.message || 'Failed to process payment.', 'error');
+                    }
+                }
             }
             // Delete bill handler
             if (e.target.matches('.delete-bill')) {
@@ -820,14 +468,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         // Open "Add Pet" Modal
-        if (e.target.matches('.action-button.add-pet')) {
+        if (e.target.matches('.action-button[data-owner-id]')) {
             const addPetModal = document.getElementById('add-pet-modal');
             document.getElementById('pet-owner-id').value = e.target.dataset.ownerId;
             document.getElementById('pet-owner-name').textContent = e.target.dataset.ownerName;
             addPetModal.showModal();
         }
         // Open "Manage Vets" Modal
-        if (e.target.matches('.action-button.manage-vets')) {
+        if (e.target.matches('#pet-table .action-button[data-pet-id]')) {
             const petId = e.target.dataset.petId;
             const petName = e.target.dataset.petName;
             const vetSelect = document.getElementById('vet-select');
@@ -870,66 +518,6 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('complete-appt-id').value = e.target.dataset.apptId;
             document.getElementById('visit-appt-id').textContent = e.target.dataset.apptId;
             completeVisitModal.showModal();
-        }
-        // Delete Owner
-        if (e.target.matches('.action-button.delete-owner')) {
-            const ownerId = e.target.dataset.ownerId;
-            showGlobalMessage('Deleting owner and all associated data...', 'success', 0); // No auto-hide
-            showLoading();
-            const response = await fetch(`${API_BASE_URL}/owners/${ownerId}`, { method: 'DELETE' });
-            hideLoading();
-            if (response.ok) {
-                showGlobalMessage('Owner deleted successfully!', 'success');
-                const ownerId = document.querySelector('#owner-table tr.selected')?.dataset.ownerId;
-                const ownerTableBody = document.querySelector('#owner-table tbody');
-                if (ownerTableBody) {
-                    document.querySelectorAll('#owner-table tbody tr').forEach(row => {
-                        if (row.dataset.ownerId == ownerId) {
-                            row.remove();
-                        }
-                    });
-                }
-                fetchAndRenderOwners();
-            } else {
-                const err = await response.json().catch(() => ({}));
-                showGlobalMessage(err.message || 'Failed to delete owner.', 'error');
-            }
-        }
-        // Delete Pet
-        if (e.target.matches('.action-button.delete-pet')) {
-            const petId = e.target.dataset.petId;
-            showGlobalMessage('Deleting pet...', 'success', 0); // No auto-hide
-            showLoading();
-            const response = await fetch(`${API_BASE_URL}/pets/${petId}`, { method: 'DELETE' });
-            hideLoading();
-            if (response.ok) {
-                showGlobalMessage('Pet deleted successfully!', 'success');
-                const ownerId = document.querySelector('#owner-table tr.selected')?.dataset.ownerId;
-                if (ownerId) showPetsForOwner(ownerId, document.getElementById('selected-owner-name').textContent);
-            } else {
-                const err = await response.json().catch(() => ({}));
-                showGlobalMessage(err.message || 'Failed to delete pet.', 'error');
-            }
-        }
-        // Edit Owner
-        if (e.target.matches('.action-button.edit-owner')) {
-            const ownerId = e.target.dataset.ownerId;
-            const row = e.target.closest('tr');
-            const phone = row.querySelector('td:nth-child(2)').textContent;
-            
-            document.getElementById('edit-owner-id').value = ownerId;
-            document.getElementById('edit-owner-phone').value = phone;
-            document.getElementById('edit-owner-modal').showModal();
-        }
-        // Edit Pet
-        if (e.target.matches('.action-button.edit-pet')) {
-            const petId = e.target.dataset.petId;
-            const row = e.target.closest('tr');
-            const breed = row.querySelector('td:nth-child(3)').textContent;
-            
-            document.getElementById('edit-pet-id').value = petId;
-            document.getElementById('edit-pet-breed').value = breed;
-            document.getElementById('edit-pet-modal').showModal();
         }
         // Close any modal
         if (e.target.matches('.close-modal-btn')) {

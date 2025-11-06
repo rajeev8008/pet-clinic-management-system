@@ -2,259 +2,84 @@
 {% block content %}
 <section id="owner-management">
     <h2> Owner & Pet Management</h2>
-    
-    <div class="owner-registration-container">
-        <div class="owner-form-wrapper">
-            <form id="add-owner-form">
-                <h3>Register New Owner</h3>
-                <div class="form-group">
-                    <label for="firstName">First Name:</label>
-                    <input type="text" id="firstName" placeholder="Owner's first name" required>
-                    <div id="error-firstName" class="field-error"></div>
-                </div>
-                <div class="form-group">
-                    <label for="lastName">Last Name:</label>
-                    <input type="text" id="lastName" placeholder="Owner's last name" required>
-                    <div id="error-lastName" class="field-error"></div>
-                </div>
-                <div class="form-group">
-                    <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" placeholder="7-15 digits, e.g., +919876543210" required>
-                    <div id="error-phone" class="field-error"></div>
-                </div>
-                <div class="form-group">
-                    <label for="email">Email (Optional):</label>
-                    <input type="email" id="email" placeholder="owner@example.com">
-                    <div id="error-email" class="field-error"></div>
-                </div>
-                <div class="form-group">
-                    <label for="address">Address:</label>
-                    <input type="text" id="address" placeholder="Residential or mailing address">
-                    <div id="error-address" class="field-error"></div>
-                </div>
-                <button type="submit" class="btn-primary">Register Owner</button>
-            </form>
-        </div>
-        
-        <div class="owner-benefits-panel">
-            <div class="owner-benefits-header">
-                <h3>🐾 Why Register Your Pet?</h3>
-            </div>
-            
-            <div class="owner-benefits-grid">
-                <div class="owner-benefit-item">
-                    <div class="benefit-number">1</div>
-                    <div class="benefit-content">
-                        <h4>Complete Health Records</h4>
-                        <p>Maintain detailed medical history for all your pets in one secure place</p>
-                    </div>
-                </div>
-                
-                <div class="owner-benefit-item">
-                    <div class="benefit-number">2</div>
-                    <div class="benefit-content">
-                        <h4>Easy Scheduling</h4>
-                        <p>Book appointments instantly and get instant confirmation and reminders</p>
-                    </div>
-                </div>
-                
-                <div class="owner-benefit-item">
-                    <div class="benefit-number">3</div>
-                    <div class="benefit-content">
-                        <h4>Expert Veterinarians</h4>
-                        <p>Access to our team of experienced vets who care for your beloved pets</p>
-                    </div>
-                </div>
-                
-                <div class="owner-benefit-item">
-                    <div class="benefit-number">4</div>
-                    <div class="benefit-content">
-                        <h4>Flexible Payment Options</h4>
-                        <p>Multiple payment methods for your convenience and peace of mind</p>
-                    </div>
-                </div>
-                
-                <div class="owner-benefit-item">
-                    <div class="benefit-number">5</div>
-                    <div class="benefit-content">
-                        <h4>Primary Vet Assignment</h4>
-                        <p>Designate a primary veterinarian for consistent and personalized care</p>
-                    </div>
-                </div>
-                
-                <div class="owner-benefit-item">
-                    <div class="benefit-number">6</div>
-                    <div class="benefit-content">
-                        <h4>24/7 Support</h4>
-                        <p>Get help and information whenever you need it for your pet's wellness</p>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="owner-info-box">
-                <div class="info-box-icon">ℹ️</div>
-                <div class="info-box-content">
-                    <p><strong>Quick Tip:</strong> Register your pet owner account today and manage your beloved companions' healthcare with ease!</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+    <form id="add-owner-form">
+        <h3>Register New Owner</h3>
+        <input type="text" id="firstName" placeholder="First Name" required>
+        <div id="error-firstName" class="field-error"></div>
+        <input type="text" id="lastName" placeholder="Last Name" required>
+        <div id="error-lastName" class="field-error"></div>
+        <input type="tel" id="phone" placeholder="Phone" required>
+        <div id="error-phone" class="field-error"></div>
+        <input type="email" id="email" placeholder="Email">
+        <div id="error-email" class="field-error"></div>
+        <input type="text" id="address" placeholder="Address">
+        <div id="error-address" class="field-error"></div>
+        <button type="submit">Add Owner</button>
+    </form>
     <hr>
-    
-    <div class="collapsible-section">
-        <button class="collapsible-toggle" id="clients-toggle">
-            <span class="toggle-icon">▼</span>
-            <span class="toggle-label">Client List</span>
-            <span class="toggle-count" id="client-count">(0)</span>
-        </button>
-        <div class="collapsible-content" id="clients-content">
-            <p class="list-hint">Click on any owner to view and manage their pets</p>
-            <div class="filter-section">
-                <input type="text" id="owner-search-input" placeholder="🔍 Search by name or phone..." class="search-input">
-            </div>
-            <div class="table-wrapper">
-                <table id="owner-table">
-                    <thead><tr><th>Owner Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
+    <div id="owner-list-container">
+        <h3>Client List (Click a client to view their pets)</h3>
+        <table id="owner-table">
+            <thead><tr><th>Name</th><th>Phone</th><th>Address</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
     </div>
 
     <div id="pet-details-container" class="hidden">
-        <div class="collapsible-section">
-            <button class="collapsible-toggle" id="pets-toggle">
-                <span class="toggle-icon">▼</span>
-                <span class="toggle-label">Pets for <span id="selected-owner-name" class="owner-name-highlight"></span></span>
-                <span class="toggle-count" id="pet-count">(0)</span>
-            </button>
-            <div class="collapsible-content" id="pets-content">
-                <p class="section-hint">Manage and view details of all pets owned by this client</p>
-                <div class="filter-section">
-                    <select id="pet-species-filter" class="filter-select">
-                        <option value="">All Species</option>
-                        <option value="Dog">Dog</option>
-                        <option value="Cat">Cat</option>
-                        <option value="Bird">Bird</option>
-                        <option value="Rabbit">Rabbit</option>
-                        <option value="Hamster">Hamster</option>
-                        <option value="Fish">Fish</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="table-wrapper">
-                    <table id="pet-table">
-                        <thead><tr><th>Pet Name</th><th>Species</th><th>Breed</th><th>Date of Birth</th><th>Age</th><th>Actions</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <h3>Pets for <span id="selected-owner-name"></span></h3>
+        <table id="pet-table">
+            <thead><tr><th>Name</th><th>Species</th><th>Breed</th><th>DoB</th><th>Age</th><th>Actions</th></tr></thead>
+            <tbody></tbody>
+        </table>
     </div>
 </section>
 
 <dialog id="add-pet-modal">
     <form id="add-pet-form">
-        <h3>Register New Pet</h3>
-        <p class="modal-info">Adding pet for <strong><span id="pet-owner-name"></span></strong></p>
+        <h3>Register New Pet for <span id="pet-owner-name"></span></h3>
         <input type="hidden" id="pet-owner-id">
-        <div class="form-group">
-            <label for="pet-name">Pet Name:</label>
-            <input type="text" id="pet-name" placeholder="Pet's name" required>
-        </div>
-        <div class="form-group">
-            <label for="pet-species">Species:</label>
-            <input type="text" id="pet-species" placeholder="e.g., Dog, Cat, Bird, Rabbit" required>
-        </div>
-        <div class="form-group">
-            <label for="pet-breed">Breed:</label>
-            <input type="text" id="pet-breed" placeholder="e.g., Golden Retriever, Siamese" required>
-        </div>
-        <div class="form-group">
-            <label for="pet-dob">Date of Birth:</label>
-            <input type="date" id="pet-dob" required>
-        </div>
-        <div class="button-group">
-            <button type="submit" class="btn-primary">Save Pet</button>
-            <button type="button" class="close-modal-btn">Cancel</button>
-        </div>
+        <input type="text" id="pet-name" placeholder="Pet Name" required>
+        <input type="text" id="pet-species" placeholder="Species (e.g., Dog)" required>
+        <input type="text" id="pet-breed" placeholder="Breed" required>
+        <label for="pet-dob">Date of Birth:</label>
+        <input type="date" id="pet-dob" required>
+        <button type="submit">Save Pet</button>
+        <button type="button" class="close-modal-btn">Cancel</button>
     </form>
 </dialog>
 
 <dialog id="manage-vets-modal">
+    <h3>Manage Vets for <span id="manage-pet-name"></span></h3>
+    <div id="assigned-vets-list"></div>
     <form id="manage-vets-form">
-        <h3>Manage Veterinarians</h3>
-        <p class="modal-info">Managing vets for <strong><span id="manage-pet-name"></span></strong></p>
-        <input type="hidden" id="manage-pet-id">
-        <div id="assigned-vets-list"></div>
-        <hr style="margin: 1.5rem 0;">
         <h4>Assign New Veterinarian</h4>
-        <div class="form-group">
-            <label for="vet-select">Select Veterinarian:</label>
-            <select id="vet-select" required></select>
-        </div>
-        <div class="form-group checkbox-group">
-            <label>
-                <input type="checkbox" id="is-primary-vet-checkbox">
-                <span>Set as Primary Veterinarian</span>
-            </label>
-        </div>
-        <div class="button-group">
-            <button type="submit" class="btn-primary">Assign Veterinarian</button>
-            <button type="button" class="close-modal-btn">Close</button>
-        </div>
+        <input type="hidden" id="manage-pet-id">
+        <label for="vet-select">Select a Veterinarian:</label>
+        <select id="vet-select" required></select>
+        <label>
+            <input type="checkbox" id="is-primary-vet-checkbox">
+            Set as Primary Vet
+        </label>
+        <button type="submit">Assign Vet</button>
+        <button type="button" class="close-modal-btn">Close</button>
     </form>
 </dialog>
 
 <dialog id="pet-history-modal">
     <div id="pet-history-content">
-        <h3>Pet Medical History</h3>
-        <div id="pet-info" class="pet-info-card"></div>
+        <h3>Pet History</h3>
+        <div id="pet-info"></div>
         <hr>
         <div id="pet-appointments">
-            <h4>Appointment Records</h4>
-            <div class="table-wrapper">
-                <table id="pet-history-table" style="width:100%;">
-                    <thead><tr><th>Date</th><th>Reason for Visit</th><th>Veterinarian</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
+            <h4>Appointments</h4>
+            <table id="pet-history-table" style="width:100%;">
+                <thead><tr><th>Date</th><th>Reason</th><th>Vet</th></tr></thead>
+                <tbody></tbody>
+            </table>
         </div>
-        <div class="modal-footer">
-            <button type="button" onclick="document.getElementById('pet-history-modal').close()" class="btn-primary">Close</button>
+        <div style="margin-top:0.75rem;text-align:right">
+            <button type="button" onclick="document.getElementById('pet-history-modal').close()">Close</button>
         </div>
     </div>
-</dialog>
-
-<dialog id="edit-owner-modal">
-    <form id="edit-owner-form">
-        <h3>Edit Owner Information</h3>
-        <input type="hidden" id="edit-owner-id">
-        <div class="form-group">
-            <label for="edit-owner-phone">Phone Number:</label>
-            <input type="tel" id="edit-owner-phone" placeholder="7-15 digits" required>
-            <div id="error-edit-owner-phone" class="field-error"></div>
-        </div>
-        <div class="button-group">
-            <button type="submit" class="btn-primary">Save Changes</button>
-            <button type="button" class="close-modal-btn">Cancel</button>
-        </div>
-    </form>
-</dialog>
-
-<dialog id="edit-pet-modal">
-    <form id="edit-pet-form">
-        <h3>Edit Pet Information</h3>
-        <input type="hidden" id="edit-pet-id">
-        <div class="form-group">
-            <label for="edit-pet-breed">Breed:</label>
-            <input type="text" id="edit-pet-breed" placeholder="Pet breed" required>
-        </div>
-        <div class="button-group">
-            <button type="submit" class="btn-primary">Save Changes</button>
-            <button type="button" class="close-modal-btn">Cancel</button>
-        </div>
-    </form>
 </dialog>
 {% endblock %}

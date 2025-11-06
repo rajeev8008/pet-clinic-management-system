@@ -2,160 +2,38 @@
 {% block content %}
 <section id="schedule-view">
     <h2> Appointment Scheduling</h2>
-    
-    <div class="booking-container">
-        <div class="booking-form-wrapper">
-            <form id="book-appointment-form">
-                <h3>Book New Appointment</h3>
-                <div class="form-group">
-                    <label for="appt-owner-select">Select Owner:</label>
-                    <select id="appt-owner-select" required><option value="">-- Select Owner --</option></select>
-                </div>
-                <div class="form-group">
-                    <label for="appt-pet-select">Select Pet:</label>
-                    <select id="appt-pet-select" required><option value="">-- Select Pet --</option></select>
-                </div>
-                <div class="form-group">
-                    <label for="appt-vet-select">Select Veterinarian:</label>
-                    <select id="appt-vet-select" required><option value="">-- Select Veterinarian --</option></select>
-                </div>
-                <div class="form-group">
-                    <label for="appt-date">Appointment Date:</label>
-                    <input type="date" id="appt-date" required>
-                    <div id="error-appt-date" class="field-error"></div>
-                </div>
-                <div class="form-group">
-                    <label for="appt-time">Appointment Time:</label>
-                    <input type="time" id="appt-time" required>
-                    <div id="error-appt-time" class="field-error"></div>
-                </div>
-                <div class="form-group">
-                    <label for="appt-reason">Reason for Visit:</label>
-                    <input type="text" id="appt-reason" placeholder="e.g., Regular checkup, Vaccination, Treatment" required>
-                    <div id="error-appt-reason" class="field-error"></div>
-                </div>
-                <button type="submit" class="btn-primary">Book Appointment</button>
-            </form>
-        </div>
-        
-        <div class="right-side-content">
-            <div class="appointment-info-box">
-                <div class="info-item">
-                    <span class="info-icon">📅</span>
-                    <div>
-                        <h4>Schedule Ahead</h4>
-                        <p>Book your pet's appointment in advance to ensure the best time slot</p>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <span class="info-icon">🏥</span>
-                    <div>
-                        <h4>Expert Care</h4>
-                        <p>Our experienced veterinarians provide comprehensive medical care for your pets</p>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <span class="info-icon">⏰</span>
-                    <div>
-                        <h4>Timely Service</h4>
-                        <p>Appointments scheduled efficiently to minimize wait times</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="benefits-container">
-                <div class="benefit-card">
-                    <div class="benefit-icon">✓</div>
-                    <h4>Quality Healthcare</h4>
-                    <p>State-of-the-art facilities and latest veterinary techniques</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">💳</div>
-                    <h4>Easy Payments</h4>
-                    <p>Multiple payment options for your convenience</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">📋</div>
-                    <h4>Complete Records</h4>
-                    <p>Comprehensive medical history and records</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="benefit-icon">🎯</div>
-                    <h4>Personalized Care</h4>
-                    <p>Individualized attention and customized plans</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
+    <form id="book-appointment-form">
+        <h3>Book New Appointment</h3>
+        <select id="appt-owner-select" required><option value="">-- Select Owner --</option></select>
+        <select id="appt-pet-select" required><option value="">-- Select Pet --</option></select>
+        <select id="appt-vet-select" required><option value="">-- Select Veterinarian --</option></select>
+        <input type="date" id="appt-date" required>
+    <div id="error-appt-date" class="field-error"></div>
+        <input type="time" id="appt-time" required>
+    <div id="error-appt-time" class="field-error"></div>
+        <input type="text" id="appt-reason" placeholder="Reason for visit" required>
+    <div id="error-appt-reason" class="field-error"></div>
+        <button type="submit">Book Appointment</button>
+    </form>
     <hr>
-    
-    <div class="collapsible-section">
-        <button class="collapsible-toggle" id="appointments-toggle">
-            <span class="toggle-icon">▼</span>
-            <span class="toggle-label">Upcoming Appointments</span>
-            <span class="toggle-count" id="appt-count">(0)</span>
-        </button>
-        <div class="collapsible-content" id="appointments-content">
-            <div class="filter-section">
-                <input type="date" id="appt-date-filter" class="filter-input" placeholder="Filter by date">
-                <select id="appt-status-filter" class="filter-select">
-                    <option value="">All Status</option>
-                    <option value="Scheduled">Scheduled</option>
-                    <option value="Completed">Completed</option>
-                    <option value="Canceled">Canceled</option>
-                </select>
-            </div>
-            <div class="table-wrapper">
-                <table id="schedule-table">
-                    <thead><tr><th>Date & Time</th><th>Pet</th><th>Owner</th><th>Veterinarian</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+    <h3>Upcoming Appointments</h3>
+    <table id="schedule-table">
+        <thead><tr><th>Time</th><th>Pet</th><th>Owner</th><th>Vet</th><th>Reason</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+    </table>
 </section>
 
 <dialog id="complete-visit-modal">
     <form id="complete-visit-form">
-        <h3>Complete Visit & Generate Bill</h3>
-        <p class="appointment-ref">Appointment #<span id="visit-appt-id"></span></p>
+        <h3>Complete Visit & Bill for Appointment #<span id="visit-appt-id"></span></h3>
         <input type="hidden" id="complete-appt-id">
-        <div class="form-group">
-            <label for="visit-description">Treatment Description:</label>
-            <textarea id="visit-description" placeholder="Describe the treatment provided" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="visit-medicine">Medicine Prescribed:</label>
-            <textarea id="visit-medicine" placeholder="List medicines and dosage" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="visit-notes">Veterinarian Notes:</label>
-            <textarea id="visit-notes" placeholder="Any additional notes or follow-up instructions" required></textarea>
-        </div>
-        <div class="form-group">
-            <label for="visit-cost">Treatment Cost (₹):</label>
-            <input type="number" step="0.01" id="visit-cost" placeholder="0.00" required>
-            <div id="error-visit-cost" class="field-error"></div>
-        </div>
-        <div class="button-group">
-            <button type="submit" class="btn-primary">Complete & Generate Bill</button>
-            <button type="button" class="close-modal-btn">Cancel</button>
-        </div>
-    </form>
-</dialog>
-
-<dialog id="remove-appointment-modal">
-    <form id="remove-appointment-form">
-        <h3>Remove Completed Appointment</h3>
-        <p class="appointment-ref">Appointment #<span id="remove-appt-id"></span></p>
-        <input type="hidden" id="remove-appt-id-hidden">
-        <p class="modal-warning">Are you sure you want to remove this completed appointment from the list?</p>
-        <p class="modal-info">This action cannot be undone. The appointment will be archived.</p>
-        <div class="button-group">
-            <button type="submit" class="btn-danger">Remove Appointment</button>
-            <button type="button" class="close-modal-btn">Cancel</button>
-        </div>
+        <textarea id="visit-description" placeholder="Description of treatment" required></textarea>
+        <textarea id="visit-medicine" placeholder="Medicine prescribed" required></textarea>
+        <textarea id="visit-notes" placeholder="Vet Notes" required></textarea>
+        <input type="number" step="0.01" id="visit-cost" placeholder="Total Cost" required>
+    <div id="error-visit-cost" class="field-error"></div>
+        <button type="submit">Complete and Generate Bill</button>
+        <button type="button" class="close-modal-btn">Cancel</button>
     </form>
 </dialog>
 {% endblock %}
