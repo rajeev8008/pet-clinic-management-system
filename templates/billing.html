@@ -8,4 +8,49 @@
         <tbody></tbody>
     </table>
 </section>
+
+<dialog id="process-payment-modal">
+    <form id="process-payment-form">
+        <h3>Process Payment</h3>
+        <input type="hidden" id="payment-app-id">
+        <input type="hidden" id="payment-bill-id">
+        
+        <div class="payment-info">
+            <p><strong>Bill ID:</strong> <span id="payment-bill-display"></span></p>
+            <p><strong>Amount:</strong> <span id="payment-amount-display"></span></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="payment-mode">Select Payment Method:</label>
+            <select id="payment-mode" required>
+                <option value="">-- Choose Payment Mode --</option>
+                <option value="Cash">💵 Cash</option>
+                <option value="Card">💳 Credit/Debit Card</option>
+                <option value="Check">📝 Check</option>
+                <option value="Online Transfer">🔗 Online Transfer</option>
+                <option value="UPI">📱 UPI</option>
+            </select>
+            <div id="error-payment-mode" class="field-error"></div>
+        </div>
+        
+        <div class="button-group">
+            <button type="submit" class="btn-primary">Confirm Payment</button>
+            <button type="button" class="close-modal-btn">Cancel</button>
+        </div>
+    </form>
+</dialog>
+
+<dialog id="delete-bill-modal">
+    <form id="delete-bill-form">
+        <h3>Delete Bill Record</h3>
+        <p class="bill-ref">Bill ID: <span id="delete-bill-id"></span></p>
+        <input type="hidden" id="delete-bill-id-hidden">
+        <p class="modal-warning">⚠️ Are you sure you want to delete this paid bill record?</p>
+        <p class="modal-info">This action cannot be undone. Only paid bills can be deleted.</p>
+        <div class="button-group">
+            <button type="submit" class="btn-danger">Delete Bill</button>
+            <button type="button" class="close-modal-btn">Cancel</button>
+        </div>
+    </form>
+</dialog>
 {% endblock %}

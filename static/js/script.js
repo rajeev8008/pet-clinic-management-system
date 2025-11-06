@@ -307,7 +307,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const row = document.createElement('tr');
                 let actionButton = '';
                 if (bill.Status === 'Unpaid') {
-                    actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}">Process Payment</button>`;
+                    actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}" data-amount="${bill.Amount}">Process Payment</button>`;
+                } else if (bill.Status === 'Paid') {
+                    actionButton = `<button class="action-button delete-bill" data-bill-id="${bill.BillID}">Delete</button>`;
                 }
                 row.innerHTML = `
                     <td>${bill.BillID}</td>
@@ -319,6 +321,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${bill.Mode || 'N/A'}</td>
                     <td>${actionButton}</td>
                 `;
+                row.dataset.status = bill.Status;
+                row.dataset.billId = bill.BillID;
                 billingTableBody.appendChild(row);
             });
         }
@@ -326,7 +330,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchAndRenderBills();
 
         billingTableBody.addEventListener('click', async (e) => {
-            if (e.target.matches('.action-button[data-bill-id]')) {
+            if (e.target.matches('.action-button[data-bill-id]:not(.delete-bill)')) {
                 const appId = e.target.dataset.appId;
                 const billId = e.target.dataset.billId;
                 const mode = prompt("Enter payment mode (e.g., Cash, Card):");
@@ -347,7 +351,76 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
+            // Delete bill handler
+            if (e.target.matches('.delete-bill')) {
+                const billId = e.target.dataset.billId;
+                const deleteBillModal = document.getElementById('delete-bill-modal');
+                document.getElementById('delete-bill-id').textContent = billId;
+                document.getElementById('delete-bill-id-hidden').value = billId;
+                deleteBillModal.showModal();
+            }
         });
+
+        if (processPaymentForm) {
+            processPaymentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                clearFieldErrors(processPaymentForm);
+                
+                const appId = document.getElementById('payment-app-id').value;
+                const billId = document.getElementById('payment-bill-id').value;
+                const mode = document.getElementById('payment-mode').value;
+                
+                if (!mode) {
+                    showFieldError('payment-mode', 'Please select a payment mode');
+                    return;
+                }
+                
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/billing/${appId}/${billId}/pay`, { 
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode: mode })
+                });
+                hideLoading();
+                if (response.ok) {
+                    showGlobalMessage('Payment processed successfully!', 'success');
+                    processPaymentForm.reset();
+                    processPaymentModal.close();
+                    fetchAndRenderBills();
+                    fetchAndRenderStats();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to process payment.', 'error');
+                }
+            });
+        }
+
+        // Delete Bill Form Handler
+        const deleteBillModal = document.getElementById('delete-bill-modal');
+        const deleteBillForm = document.getElementById('delete-bill-form');
+        if (deleteBillForm) {
+            deleteBillForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const billId = document.getElementById('delete-bill-id-hidden').value;
+                
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/billing/${billId}`, {
+                    method: 'DELETE'
+                });
+                hideLoading();
+                
+                if (response.ok) {
+                    showGlobalMessage('Bill deleted successfully!', 'success');
+                    deleteBillForm.reset();
+                    deleteBillModal.close();
+                    fetchAndRenderBills();
+                    fetchAndRenderStats();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to delete bill.', 'error');
+                }
+            });
+        }
     }
 
     // --- Global Event Listeners ---
