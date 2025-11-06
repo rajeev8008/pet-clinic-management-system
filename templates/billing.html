@@ -73,4 +73,18 @@
         </div>
     </form>
 </dialog>
+
+<dialog id="delete-bill-modal">
+    <form id="delete-bill-form">
+        <h3>Delete Bill Record</h3>
+        <p class="bill-ref">Bill ID: <span id="delete-bill-id"></span></p>
+        <input type="hidden" id="delete-bill-id-hidden">
+        <p class="modal-warning">⚠️ Are you sure you want to delete this paid bill record?</p>
+        <p class="modal-info">This action cannot be undone. Only paid bills can be deleted.</p>
+        <div class="button-group">
+            <button type="submit" class="btn-danger">Delete Bill</button>
+            <button type="button" class="close-modal-btn">Cancel</button>
+        </div>
+    </form>
+</dialog>
 {% endblock %}

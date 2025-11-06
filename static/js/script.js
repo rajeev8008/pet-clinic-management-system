@@ -640,6 +640,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 let actionButton = '';
                 if (bill.Status === 'Unpaid') {
                     actionButton = `<button class="action-button" data-app-id="${bill.AppID}" data-bill-id="${bill.BillID}" data-amount="${bill.Amount}">Process Payment</button>`;
+                } else if (bill.Status === 'Paid') {
+                    actionButton = `<button class="action-button delete-bill" data-bill-id="${bill.BillID}">Delete</button>`;
                 }
                 row.innerHTML = `
                     <td>${bill.BillID}</td>
@@ -652,6 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${actionButton}</td>
                 `;
                 row.dataset.status = bill.Status;
+                row.dataset.billId = bill.BillID;
                 billingTableBody.appendChild(row);
             });
             
@@ -686,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchAndRenderBills();
 
         billingTableBody.addEventListener('click', async (e) => {
-            if (e.target.matches('.action-button[data-bill-id]')) {
+            if (e.target.matches('.action-button[data-bill-id]:not(.delete-bill)')) {
                 const appId = e.target.dataset.appId;
                 const billId = e.target.dataset.billId;
                 const amount = e.target.dataset.amount;
@@ -699,6 +702,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('payment-mode').value = '';
                 clearFieldErrors(processPaymentForm);
                 processPaymentModal.showModal();
+            }
+            // Delete bill handler
+            if (e.target.matches('.delete-bill')) {
+                const billId = e.target.dataset.billId;
+                const deleteBillModal = document.getElementById('delete-bill-modal');
+                document.getElementById('delete-bill-id').textContent = billId;
+                document.getElementById('delete-bill-id-hidden').value = billId;
+                deleteBillModal.showModal();
             }
         });
 
@@ -732,6 +743,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     const err = await response.json().catch(() => ({}));
                     showGlobalMessage(err.message || 'Failed to process payment.', 'error');
+                }
+            });
+        }
+
+        // Delete Bill Form Handler
+        const deleteBillModal = document.getElementById('delete-bill-modal');
+        const deleteBillForm = document.getElementById('delete-bill-form');
+        if (deleteBillForm) {
+            deleteBillForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const billId = document.getElementById('delete-bill-id-hidden').value;
+                
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/billing/${billId}`, {
+                    method: 'DELETE'
+                });
+                hideLoading();
+                
+                if (response.ok) {
+                    showGlobalMessage('Bill deleted successfully!', 'success');
+                    deleteBillForm.reset();
+                    deleteBillModal.close();
+                    fetchAndRenderBills();
+                    fetchAndRenderStats();
+                } else {
+                    const err = await response.json().catch(() => ({}));
+                    showGlobalMessage(err.message || 'Failed to delete bill.', 'error');
                 }
             });
         }

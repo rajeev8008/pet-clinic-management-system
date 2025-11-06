@@ -358,6 +358,42 @@ def process_payment(app_id, bill_id):
     connection.close()
     return jsonify({'message': 'Payment processed successfully!'})
 
+@app.route('/api/billing/<int:bill_id>', methods=['DELETE'])
+def delete_bill(bill_id):
+    connection = create_db_connection()
+    if not connection:
+        return jsonify({'message': 'Database connection failed'}), 500
+    try:
+        cursor = connection.cursor()
+        # Check if bill exists and is paid
+        sql_check = "SELECT Status FROM Billing WHERE BillID = %s"
+        cursor.execute(sql_check, (bill_id,))
+        result = cursor.fetchone()
+        if not result:
+            return jsonify({'message': 'Bill not found'}), 404
+        if result[0] != 'Paid':
+            return jsonify({'message': 'Only paid bills can be deleted'}), 400
+        
+        # Delete the bill
+        sql_delete = "DELETE FROM Billing WHERE BillID = %s"
+        cursor.execute(sql_delete, (bill_id,))
+        connection.commit()
+        return jsonify({'message': 'Bill deleted successfully!'})
+    except Error as e:
+        connection.rollback()
+        return jsonify({'message': f'Failed to delete bill: {e}'}), 500
+    finally:
+        try:
+            if 'cursor' in locals() and cursor:
+                cursor.close()
+        except Exception:
+            pass
+        try:
+            if connection and connection.is_connected():
+                connection.close()
+        except Exception:
+            pass
+
 # New endpoint: pet history using stored procedure GetPetHistory
 @app.route('/api/pet-history/<int:pet_id>', methods=['GET'])
 def get_pet_history(pet_id):
